@@ -21,6 +21,17 @@
     }
   }
 
+  // herdr-web-ui sizes its shell to window.visualViewport, which is how it keeps the key bar and the prompt above a
+  // phone's keyboard. iOS shrinks the visual viewport of the top-level page only, so inside BitBang's frame the
+  // app saw a full-height screen and left the last lines under the keyboard. The frame is same-origin with
+  // bitba.ng, so the app is given the parent's viewport, which does shrink. This runs before the app's own scripts.
+  try {
+    const outer = window.parent !== window ? window.parent.visualViewport : null;
+    if (outer) Object.defineProperty(window, "visualViewport", { configurable: true, get: () => outer });
+  } catch {
+    // a parent that cannot be read leaves the app with its own viewport
+  }
+
   const MUTATING = /^(?:POST|PUT|PATCH|DELETE)$/i;
 
   function sameOrigin(url) {
