@@ -2,11 +2,11 @@
  * go-remote start: brings up the workspace for a repo, optionally hands it an agent session from the laptop, and
  * shows the phone the way in.
  */
-import { copyFileSync, mkdirSync, realpathSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { resolveRoot } from "../config.ts";
 import { checkEnv } from "../env.ts";
-import { agentReady, checkCopyIn, containerModel, copyIn, linkTarget, mainPane, prompt, requireWeb, settledDefaultAgent, startAgent } from "../handoff.ts";
+import { agentReady, briefModel, checkCopyIn, containerModel, copyIn, linkTarget, mainPane, prompt, requireWeb, settledDefaultAgent, startAgent } from "../handoff.ts";
 import { keepAwake, onBattery } from "../host.ts";
 import type { View } from "../link.ts";
 import { type AgentProcess, callingAgent, inTurn, movePending, otherSession, spawnMove } from "../move.ts";
@@ -218,9 +218,10 @@ export async function start(options: StartOptions): Promise<Record<string, unkno
       await copyIn(workspace, session, hostStores());
       ui.success(`Copied ${AGENT_NAMES[session.agent]} session ${session.id} into the container`);
     }
-    // a resumed session keeps the model its transcript records; a fresh agent starts on GR_MODEL, when it is set
-    const model = ref ? undefined : await containerModel(workspace);
-    if (model) ui.infoDim(`Starting ${AGENT_NAMES[agent]} on ${model}, as GR_MODEL says`);
+    // a resumed session keeps the model its transcript records; a fresh agent takes the brief's, else GR_MODEL
+    const briefed = !ref && options.brief ? briefModel(readFileSync(options.brief, "utf8")) : undefined;
+    const model = ref ? undefined : (briefed ?? (await containerModel(workspace)));
+    if (model) ui.infoDim(`Starting ${AGENT_NAMES[agent]} on ${model}, as ${briefed ? "the handoff brief asks" : "GR_MODEL says"}`);
     const started = await startAgent(workspace, agent, session?.cwd ?? repo, ref ? resumeArgs(ref, options.fork) : model ? ["--model", model] : []);
     pane = started.pane;
     agentName = started.name;

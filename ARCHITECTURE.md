@@ -261,8 +261,9 @@ away. Instead:
    the laptop's copy with `SIGTERM`, but only if that process's command line is unchanged, so the session never has two
    writers.
 5. It copies the session in (`copyIn()`, through `docker exec` as the agent user, so the files are not owned by root),
-   resumes it in a new Herdr tab (`startAgent()`), gives it the brief if there is one, and opens the QR code in a
-   window. A line on the terminal the agent ran in says what happened, once the agent has left it.
+   resumes it in a new Herdr tab (`startAgent()`; a fresh agent also gets `--model` from the brief's `Model:` line or
+   `GR_MODEL`), gives it the brief if there is one, and opens the QR code in a window. A line on the terminal the agent
+   ran in says what happened, once the agent has left it.
 
 Copying in never loses work in the container. Transcripts only grow, so `checkCopyIn()` compares each file's size and
 SHA-256 with the laptop's: a container copy that is a prefix of the laptop's is older and is replaced, and an identical

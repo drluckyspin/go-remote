@@ -180,7 +180,17 @@ export function tabLabel(agent: AgentKind, name: string): string {
 // checks GR_MODEL against the same pattern.
 const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
-/** The container's GR_MODEL (from .env, through compose): the model a new agent starts on. */
+/**
+ * The model a handoff brief asks for, from a `Model: <id>` line near its top. The writing agent knows its own model and
+ * go-remote cannot see it, so the brief carries it. An agent writes the brief, so anything that is not a plain model id
+ * is ignored.
+ */
+export function briefModel(text: string): string | undefined {
+  const found = /^model:[ \t]*(\S+)[ \t]*$/im.exec(text.split("\n").slice(0, 20).join("\n"));
+  return found?.[1] && MODEL_ID.test(found[1]) ? found[1] : undefined;
+}
+
+/** The container's GR_MODEL (from .env, through compose): the model a new agent starts on when the brief names none. */
 export async function containerModel(workspace: Workspace): Promise<string | undefined> {
   const result = await capture(["docker", "exec", workspace.id, "printenv", "GR_MODEL"]);
   const value = result.stdout.trim();

@@ -240,11 +240,15 @@ or from your global one.
 ### Choosing the model
 
 A new agent starts on its own default, which in a fresh container is the account's, not what you picked on the laptop.
-`GR_MODEL` in `.env`, such as `claude-opus-5-5` or `opus`, is passed to a new agent as `--model`. Model ids differ
-between agents, so pair it with `GR_DEFAULT_AGENT`. A value that is not a plain model id is ignored.
+Two things set it:
 
-A session moved with `--resume` keeps the model its transcript records, and `GR_MODEL` does not change it. The model
-shown beside the phone's chat box only reports what the agent is running; change it with `/model` in the terminal view.
+- **`GR_MODEL`** in `.env`, such as `claude-opus-5-5` or `opus`, is passed to a new agent as `--model`. Model ids differ
+  between agents, so pair it with `GR_DEFAULT_AGENT`.
+- **A `Model:` line** at the top of a handoff brief. `/go-remote` from an agent that cannot be resumed, such as Cursor,
+  writes it from the model it runs on. It wins over `GR_MODEL`. A value that is not a plain model id is ignored.
+
+A session moved with `--resume` keeps the model its transcript records, and neither setting changes it. The model shown
+beside the phone's chat box only reports what the agent is running; change it with `/model` in the terminal view.
 
 ### Signing in
 
