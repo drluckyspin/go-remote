@@ -176,6 +176,17 @@ export function tabLabel(agent: AgentKind, name: string): string {
   return name === agent ? title : `${title} ${name.slice(agent.length + 1)}`;
 }
 
+// The only shape that reaches --model, so a flag or a shell word never gets onto a command line. docker/agent.bash
+// checks GR_MODEL against the same pattern.
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+
+/** The container's GR_MODEL (from .env, through compose): the model a new agent starts on. */
+export async function containerModel(workspace: Workspace): Promise<string | undefined> {
+  const result = await capture(["docker", "exec", workspace.id, "printenv", "GR_MODEL"]);
+  const value = result.stdout.trim();
+  return result.code === 0 && MODEL_ID.test(value) ? value : undefined;
+}
+
 /**
  * Starts an agent in a new tab at `cwd`, so the repo's own shell stays as it was. Returns the agent's name,
  * its tab's label, its pane, and whether Herdr saw it come up ready for input.

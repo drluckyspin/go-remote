@@ -217,6 +217,7 @@ when it is not. Most take effect when a workspace next starts.
 | `GR_UI`                | `web`             | What the QR code opens: `web` (herdr-web-ui) or [`shell`](#the-shell-mode)    |
 | `GR_RELAY`             | `force`           | `force` connects the phone through the [relay](#networks-and-reliability)     |
 | `GR_DEFAULT_AGENT`     | `auto`            | The agent a web workspace opens: `auto`, `claude`, `codex`, `cursor`, `none`  |
+| `GR_MODEL`             | `""`              | The model a new agent starts on; see [below](#choosing-the-model)             |
 | `BITBANG_PIN`          | `""`              | PIN that BitBang asks for before connecting                                   |
 | `BITBANG_MAX_SESSIONS` | `3`               | Maximum concurrent shells across all browsers, in the shell mode              |
 | `GR_WATCHDOG_INTERVAL` | `300`             | Seconds between listener health probes; `0` turns the watchdog off            |
@@ -235,6 +236,15 @@ The container receives keys and tokens **only from `.env`**. Keys exported in yo
 set in `~/.zprofile`, never reach it. Anyone who gets into the workspace can read what the container holds, so `.env`
 should hold only the keys the workspace needs. Commits use the `user.name` and `user.email` from the repo's git config,
 or from your global one.
+
+### Choosing the model
+
+A new agent starts on its own default, which in a fresh container is the account's, not what you picked on the laptop.
+`GR_MODEL` in `.env`, such as `claude-opus-5-5` or `opus`, is passed to a new agent as `--model`. Model ids differ
+between agents, so pair it with `GR_DEFAULT_AGENT`. A value that is not a plain model id is ignored.
+
+A session moved with `--resume` keeps the model its transcript records, and `GR_MODEL` does not change it. The model
+shown beside the phone's chat box only reports what the agent is running; change it with `/model` in the terminal view.
 
 ### Signing in
 

@@ -6,7 +6,7 @@ import { copyFileSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { resolveRoot } from "../config.ts";
 import { checkEnv } from "../env.ts";
-import { agentReady, checkCopyIn, copyIn, linkTarget, mainPane, prompt, requireWeb, settledDefaultAgent, startAgent } from "../handoff.ts";
+import { agentReady, checkCopyIn, containerModel, copyIn, linkTarget, mainPane, prompt, requireWeb, settledDefaultAgent, startAgent } from "../handoff.ts";
 import { keepAwake, onBattery } from "../host.ts";
 import type { View } from "../link.ts";
 import { type AgentProcess, callingAgent, inTurn, movePending, otherSession, spawnMove } from "../move.ts";
@@ -218,7 +218,10 @@ export async function start(options: StartOptions): Promise<Record<string, unkno
       await copyIn(workspace, session, hostStores());
       ui.success(`Copied ${AGENT_NAMES[session.agent]} session ${session.id} into the container`);
     }
-    const started = await startAgent(workspace, agent, session?.cwd ?? repo, ref ? resumeArgs(ref, options.fork) : []);
+    // a resumed session keeps the model its transcript records; a fresh agent starts on GR_MODEL, when it is set
+    const model = ref ? undefined : await containerModel(workspace);
+    if (model) ui.infoDim(`Starting ${AGENT_NAMES[agent]} on ${model}, as GR_MODEL says`);
+    const started = await startAgent(workspace, agent, session?.cwd ?? repo, ref ? resumeArgs(ref, options.fork) : model ? ["--model", model] : []);
     pane = started.pane;
     agentName = started.name;
     if (started.ready) {

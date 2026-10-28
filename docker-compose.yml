@@ -56,6 +56,7 @@ services:
       # Read back by go-remote, which builds the phone's link on the host
       GR_RELAY: ${GR_RELAY:-force}
       GR_DEFAULT_AGENT: ${GR_DEFAULT_AGENT:-auto}
+      GR_MODEL: ${GR_MODEL:-}
       BITBANG_MAX_SESSIONS: ${BITBANG_MAX_SESSIONS:-3}
       GR_WATCHDOG_INTERVAL: ${GR_WATCHDOG_INTERVAL:-300}
       GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME:-}

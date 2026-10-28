@@ -6,6 +6,7 @@
 # Description: The web mode's default agent. Answers Claude Code's and Codex's first-run questions for the
 #              mounted repo, starts the default agent (GR_DEFAULT_AGENT) in its own Herdr tab as soon as
 #              one is signed in, and keeps its state in /tmp/go-remote/agent.json for go-remote and the shell's hint.
+#              GR_MODEL, when set, is the model it starts on.
 #              An agent opened before anyone signed in sits at its sign-in screen; once the sign-in happens
 #              elsewhere (go-remote login), it is restarted in its tab.
 #
@@ -208,6 +209,12 @@ start_in_pane() {
   local name="$1" kind="$2" pane="$3" deadline=$((SECONDS + 15)) result
   local -a args=()
   [ "$kind" != cursor ] || args=(--disable-auto-update)
+  # same shape the CLI accepts from a brief: a flag or a shell word must never come through here
+  if [[ "${GR_MODEL:-}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]]; then
+    args+=(--model "$GR_MODEL")
+  elif [ -n "${GR_MODEL:-}" ]; then
+    log_warning "Ignoring GR_MODEL: it is not a plain model id"
+  fi
   while true; do
     if result="$(herdr agent start "$name" --kind "$kind" --pane "$pane" --timeout 90000 -- "${args[@]}" 2>&1)" &&
       ! jq -e '.error' <<<"$result" >/dev/null 2>&1; then
