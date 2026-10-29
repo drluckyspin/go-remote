@@ -203,6 +203,22 @@ export function pickWorkspace(workspaces: Workspace[], target?: string, cwd = pr
   );
 }
 
+/**
+ * What go-remote stop stops: the named workspace, else the one for the repo `cwd` is in, else every one. Stopping a
+ * workspace ends its phone sessions, so stopping all of them (`--all`, or several outside a repo) asks first.
+ */
+export function stopTargets(
+  workspaces: Workspace[],
+  options: { target?: string; all: boolean },
+  cwd = process.cwd(),
+): { targets: Workspace[]; ask: boolean } {
+  if (options.all) return { targets: workspaces, ask: workspaces.length > 0 };
+  if (options.target !== undefined) return { targets: [pickWorkspace(workspaces, options.target, cwd)], ask: false };
+  const here = enclosingWorkspace(workspaces, cwd);
+  if (here) return { targets: [here], ask: false };
+  return { targets: workspaces, ask: workspaces.length > 1 };
+}
+
 export async function findWorkspace(target?: string): Promise<Workspace> {
   return pickWorkspace(await listWorkspaces(), target);
 }

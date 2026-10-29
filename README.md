@@ -73,6 +73,12 @@ go-remote login            # with Claude Code on this computer: sign it in once,
 PATH: add `export PATH="$HOME/.local/bin:$PATH"` to your shell profile, and open a new terminal. The first
 `go-remote start` creates `.env` from `.env.example`, readable by you only. Everything in it is optional.
 
+To upgrade, run `git pull` in the checkout, then `make upgrade`: it builds the image and installs the new `go-remote`
+and its `/go-remote` skill, so all three stay the same version. A workspace that is already running keeps the old image
+until it restarts, and `make upgrade` lists any that do; restarting one ends its phone sessions, so it leaves that to
+you. A release that adds a setting stops `go-remote start` until `.env` has it; `make check` offers a `.env.new` with it
+added.
+
 Codex and Cursor sign in inside a running workspace, and so does Claude Code when it is not on this computer. Run
 `go-remote start ~/src/my-repo` first: with no agent signed in, it offers to sign you in. See [Signing in](#signing-in).
 
@@ -174,17 +180,21 @@ The row fits a 48-column phone screen, and the laptop sees it too. `GR_KEY_BAR=f
 | `pull [path] [agent:id]`               | Copy the container's sessions back to this computer                                                          |
 | `attach [path]`                        | Open the Herdr UI in this terminal (`--shell` for the tmux session)                                          |
 | `logs [path]`                          | Show the container log, with the URL taken out                                                               |
-| `stop [path]`                          | Stop a workspace (`--all` stops every one); logins stay in the home volume                                   |
+| `stop [path]`                          | Stop a workspace, or every one after asking (`--all`, `--yes`); logins stay in the home volume               |
 | `doctor`                               | Check Docker, the image and its pins, `.env`, and the agent CLIs on this computer                            |
 | `install-skill`                        | Install the `/go-remote` skill for Claude Code, Codex and Cursor                                             |
 
 `go-remote help` lists every option, and `--json` gives machine-readable output for scripts and agents. The link is
 shown only on an interactive terminal: otherwise the QR code opens in a window. Each repo gets its own workspace, named
 `go-remote-<directory name>`, so several can run at once. `start` and `sessions` default to the current directory. `qr`,
-`pull`, `attach`, `logs` and `stop` take the workspace for the repo you are in, else the only one. Otherwise, give them
-the repo's path or the workspace's name as `list` shows it, which still works after its repo has moved:
-`go-remote stop go-remote-my-repo`. `login` signs in inside the named workspace, or any running one, since they share
-their sign-ins.
+`pull`, `attach`, `logs` and `stop` take the workspace for the repo you are in, else the only one (`stop`, else all of
+them; see below). Otherwise, give them the repo's path or the workspace's name as `list` shows it, which still works
+after its repo has moved: `go-remote stop go-remote-my-repo`. `login` signs in inside the named workspace, or any
+running one, since they share their sign-ins.
+
+`stop` outside any repo, with several workspaces, stops all of them, and so does `stop --all`. Stopping a workspace ends
+its phone sessions, so both ask first; `--yes` skips the question, and without a terminal to ask on, `stop` refuses
+unless it is given.
 
 The make targets wrap the same commands, for use from the checkout. `make help` lists them all:
 
@@ -194,8 +204,9 @@ The make targets wrap the same commands, for use from the checkout. `make help` 
 | `url`                           | Show a fresh QR code (`QR=false` prints only the link)                        |
 | `login`                         | Sign Claude Code (or `AGENT=codex` or `AGENT=cursor`) in, for every workspace |
 | `attach` / `logs` / `ping`      | Open the Herdr UI here, follow the log, or list workspaces and their health   |
-| `down`                          | Stop `REPO`'s workspace, or all of them                                       |
+| `down`                          | Stop `REPO`'s workspace, or all of them after asking (`YES=1` skips it)       |
 | `install-cli` / `install-skill` | Install `go-remote` and `gr` (`BIN_DIR=` to change where), or the skill       |
+| `upgrade`                       | `build`, `install-cli` and `install-skill` in one go, after a `git pull`      |
 | `clean` / `clean-home`          | Remove the images, binaries and exported CAs, or (after asking) the logins    |
 
 **`gr` and Oh My Zsh.** `make install-cli` links `gr` to `go-remote`. A `gr` already in that directory that isn't
@@ -205,6 +216,7 @@ Add `alias gr=go-remote` to `~/.zshrc`, after the line that loads Oh My Zsh.
 
 `go-remote install-skill` offers to install the published skill from [skills.sh](https://skills.sh) with the official
 `skills` CLI, when it is available there. Otherwise, or if you decline, it installs the copy built into `go-remote`.
+`--embedded` installs that copy without asking, which is what `make upgrade` does, so the skill matches the CLI.
 
 ## Configuration
 
@@ -399,17 +411,17 @@ connect through the proxy, temporarily turn off Zscaler Internet Security to con
 Every component in the image is pinned, and checksum-verified where its project publishes one. `go-remote doctor` shows
 the versions in the image you built.
 
-| Component        | go-remote 0.1.0 | go-remote 0.2.0    | go-remote 0.3.0    |
-| ---------------- | --------------- | ------------------ | ------------------ |
-| BitBang          | 0.5.1           | 0.5.1              | 0.5.1              |
-| Claude Code      | 2.1.302         | 2.1.302            | 2.1.302            |
-| Codex            | 0.163.0         | 0.163.0            | 0.163.0            |
-| Cursor Agent CLI | not included    | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 |
-| Herdr            | not included    | 0.9.5              | 0.9.5              |
-| herdr-web-ui     | not included    | 0.4.11             | 0.4.11             |
-| Bun              | not included    | 1.4.2              | 1.4.2              |
-| uv               | 0.13.1          | 0.13.1             | 0.13.1             |
-| Node.js          | 24              | 24                 | 24                 |
+| Component        | go-remote 0.1.0 | go-remote 0.2.0    | go-remote 0.3.0    | go-remote 0.4.0    |
+| ---------------- | --------------- | ------------------ | ------------------ | ------------------ |
+| BitBang          | 0.5.1           | 0.5.1              | 0.5.1              | 0.5.1              |
+| Claude Code      | 2.1.302         | 2.1.302            | 2.1.302            | 2.1.302            |
+| Codex            | 0.163.0         | 0.163.0            | 0.163.0            | 0.163.0            |
+| Cursor Agent CLI | not included    | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 |
+| Herdr            | not included    | 0.9.5              | 0.9.5              | 0.9.5              |
+| herdr-web-ui     | not included    | 0.4.11             | 0.4.11             | 0.4.11             |
+| Bun              | not included    | 1.4.2              | 1.4.2              | 1.4.2              |
+| uv               | 0.13.1          | 0.13.1             | 0.13.1             | 0.13.1             |
+| Node.js          | 24              | 24                 | 24                 | 24                 |
 
 ## Project layout
 
@@ -441,7 +453,7 @@ make unit      # type-check and unit-test go-remote and go-remote-ingress, in Do
 make cli       # go-remote for macOS and Linux, arm64 and x64, into dist/
 make test      # smoke test of both modes in a throwaway container (needs make build)
 make e2e       # Playwright phone test through a real BitBang URL: chat with Claude Code, then a moved session
-make bump-version 0.3.0    # set VERSION and sync it into package.json
+make bump-version X.Y.Z    # set VERSION and sync it into package.json
 ```
 
 `make test` and `make e2e` use their own repo, env file and home volume, so they never read your `.env` or touch your

@@ -120,8 +120,8 @@ endif
 # -----------------------------------------------------------------------------------------------------------
 
 .PHONY: help build cli install-cli check run run-detached url login attach ping logs down clean clean-home
-.PHONY: test unit e2e lint format format-check bump-version
-.PHONY: check_docker check_buildx check_env check_env_perms check_image require_repo export_ca
+.PHONY: upgrade test unit e2e lint format format-check bump-version
+.PHONY: check_docker check_buildx check_env check_env_perms check_project_repo check_image require_repo export_ca
 .PHONY: check_dprint check_shfmt check_mbake check_shellcheck check_formatters
 
 .PHONY: help ## Show this help message
@@ -191,6 +191,16 @@ check_env_perms:
 require_repo:
 	@if [ -z "$(REPO_EXPANDED)" ]; then \
 		$(LOGGER) log_error "Pass the repo to mount, e.g. make run REPO=~/src/my-repo"; \
+		exit 1; \
+	fi
+
+# The project name is the repo's directory name, so two repos can share it: refuse to stop another repo's workspace
+check_project_repo:
+	@[ -n "$(REPO_EXPANDED)" ] || exit 0; \
+	repo="$(or $(REPO_PATH),$(REPO_EXPANDED))"; \
+	existing=$$(docker ps -a --filter label=com.docker.compose.project=$(PROJECT) --format '{{.Label "go-remote.repo"}}' | head -n 1); \
+	if [ -n "$$existing" ] && [ "$$existing" != "$$repo" ]; then \
+		$(LOGGER) log_error "$(PROJECT) serves $$existing, not $$repo. Stop it with: make down REPO=$$existing"; \
 		exit 1; \
 	fi
 
@@ -268,11 +278,32 @@ install-cli: $(GO_REMOTE)
 		*":$(BIN_DIR):"*) ;; \
 		*) $(LOGGER) log_warning "$(BIN_DIR) is not on PATH; add it in your shell profile" ;; \
 	esac
-	@$(LOGGER) log_info_dim "Next: go-remote install-skill adds /go-remote to Claude Code, Codex and Cursor"
+	$(if $(filter upgrade,$(MAKECMDGOALS)),,@$(LOGGER) log_info_dim "Next: go-remote install-skill adds /go-remote to Claude Code, Codex and Cursor")
 
 .PHONY: install-skill ## Install the /go-remote skill for Claude Code, Codex and Cursor
 install-skill: $(GO_REMOTE)
-	@$(GR_RUN) install-skill
+	@$(GR_RUN) install-skill$(if $(filter upgrade,$(MAKECMDGOALS)), --embedded)
+
+# The CLI, its built-in skill and the image change together: a new CLI on an old image starts agents the old way.
+# So under upgrade nothing is installed until the image builds, even with make -j, and the skill is the CLI's own
+# copy rather than whatever skills.sh publishes. Running workspaces keep their image until they restart, and
+# restarting one ends its phone sessions, so they are only listed.
+ifneq ($(filter upgrade,$(MAKECMDGOALS)),)
+install-cli install-skill: build
+endif
+
+.PHONY: upgrade ## Build the image and install the CLI and the /go-remote skill from this checkout (git pull first)
+upgrade: build install-cli install-skill
+	@$(LOGGER) log_success "go-remote $$("$(BIN_DIR)/go-remote" --version | awk '{print $$2}'), its skill and the image are up to date"
+	@image=$$(docker image inspect -f '{{.Id}}' $(IMAGE)); \
+	stale=$$(docker ps --filter label=go-remote.repo --filter label=com.docker.compose.service=workspace \
+		--format '{{.ID}} {{.Label "com.docker.compose.project"}}' | while read -r id project; do \
+			[ "$$(docker inspect -f '{{.Image}}' "$$id")" = "$$image" ] || printf '%s ' "$$project"; \
+		done); \
+	if [ -n "$$stale" ]; then \
+		$(LOGGER) log_warning "Still on the old image until they restart: $${stale% }"; \
+		$(LOGGER) log_indent log_dim "go-remote stop <name>, then go-remote start in its repo. Stopping one ends its phone sessions."; \
+	fi
 
 # -----------------------------------------------------------------------------------------------------------
 # Run targets
@@ -330,12 +361,27 @@ ping: check_docker
 		esac; \
 	done
 
-.PHONY: down ## Stop REPO's workspace, or every workspace when REPO is not given (keeps the home volume)
+# Stopping a workspace ends its phone sessions, so stopping all of them asks first, as go-remote stop does. It does not
+# call go-remote: that would build the CLI, which needs Buildx, and stopping must work without it.
+.PHONY: down ## Stop REPO's workspace, or every workspace after asking when REPO is not given (YES=1 skips the question)
 down: check_docker check_project_repo
 	@projects="$(if $(REPO_EXPANDED),$(PROJECT),$(WORKSPACE_PROJECTS))"; \
 	if [ -z "$$projects" ]; then \
 		$(LOGGER) log_info_dim "No workspaces to stop."; \
 		exit 0; \
+	fi; \
+	if [ -z "$(REPO_EXPANDED)" ] && [ "$(YES)" != 1 ]; then \
+		names=$$(printf '%s\n' $$projects | paste -sd ',' - | sed 's/,/, /g'); \
+		if [ ! -t 0 ]; then \
+			$(LOGGER) log_error "Not stopping $$names without asking"; \
+			$(LOGGER) log_indent log_dim "Pass YES=1 to stop them, or REPO= to stop one."; \
+			exit 1; \
+		fi; \
+		read -r -p "Stop every workspace ($$names)? Their phone sessions end. [y/N] " answer; \
+		case "$$answer" in \
+			[yY] | [yY][eE][sS]) ;; \
+			*) $(LOGGER) log_info_dim "Nothing stopped."; exit 0 ;; \
+		esac; \
 	fi; \
 	for project in $$projects; do \
 		repo=$$(docker ps -a --filter label=com.docker.compose.project=$$project --format '{{.Label "go-remote.repo"}}' | head -n 1); \
@@ -352,6 +398,10 @@ clean: check_docker
 	@$(LOGGER) log_separator
 	@$(LOGGER) log_info "Cleaning $(PROJECT_NAME) resources"
 	@$(MAKE) down REPO=
+	@if [ -n "$$(docker ps -aq --filter label=go-remote.repo)" ]; then \
+		$(LOGGER) log_error "Workspaces are still there, so nothing was removed. Stop them first: make down"; \
+		exit 1; \
+	fi
 	@$(LOGGER) log_indent log_dim "Removing images $(IMAGE) and $(E2E_IMAGE)..."
 	@docker image rm $(IMAGE) $(E2E_IMAGE) >/dev/null 2>&1 || true
 	@$(LOGGER) log_indent log_dim "Removing dist/, exported CAs and .env backup files..."
