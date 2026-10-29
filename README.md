@@ -187,10 +187,10 @@ The row fits a 48-column phone screen, and the laptop sees it too. `GR_KEY_BAR=f
 `go-remote help` lists every option, and `--json` gives machine-readable output for scripts and agents. The link is
 shown only on an interactive terminal: otherwise the QR code opens in a window. Each repo gets its own workspace, named
 `go-remote-<directory name>`, so several can run at once. `start` and `sessions` default to the current directory. `qr`,
-`pull`, `attach`, `logs` and `stop` take the workspace for the repo you are in, else the only one. Otherwise, give them
-the repo's path or the workspace's name as `list` shows it, which still works after its repo has moved:
-`go-remote stop go-remote-my-repo`. `login` signs in inside the named workspace, or any running one, since they share
-their sign-ins.
+`pull`, `attach`, `logs` and `stop` take the workspace for the repo you are in, else the only one (`stop`, else all of
+them; see below). Otherwise, give them the repo's path or the workspace's name as `list` shows it, which still works
+after its repo has moved: `go-remote stop go-remote-my-repo`. `login` signs in inside the named workspace, or any
+running one, since they share their sign-ins.
 
 `stop` outside any repo, with several workspaces, stops all of them, and so does `stop --all`. Stopping a workspace ends
 its phone sessions, so both ask first; `--yes` skips the question, and without a terminal to ask on, `stop` refuses
@@ -452,7 +452,7 @@ make unit      # type-check and unit-test go-remote and go-remote-ingress, in Do
 make cli       # go-remote for macOS and Linux, arm64 and x64, into dist/
 make test      # smoke test of both modes in a throwaway container (needs make build)
 make e2e       # Playwright phone test through a real BitBang URL: chat with Claude Code, then a moved session
-make bump-version 0.3.0    # set VERSION and sync it into package.json
+make bump-version X.Y.Z    # set VERSION and sync it into package.json
 ```
 
 `make test` and `make e2e` use their own repo, env file and home volume, so they never read your `.env` or touch your
