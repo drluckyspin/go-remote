@@ -121,7 +121,7 @@ endif
 
 .PHONY: help build cli install-cli check run run-detached url login attach ping logs down clean clean-home
 .PHONY: test unit e2e lint format format-check bump-version
-.PHONY: check_docker check_env check_env_perms check_image require_repo export_ca
+.PHONY: check_docker check_buildx check_env check_env_perms check_image require_repo export_ca
 .PHONY: check_dprint check_shfmt check_mbake check_shellcheck check_formatters
 
 .PHONY: help ## Show this help message
@@ -156,12 +156,18 @@ check_docker:
 		$(LOGGER) log_error "Docker Compose v2 ('docker compose') is required."; \
 		exit 1; \
 	fi
+	@$(LOGGER) log_info_dim "docker $$(docker version -f '{{.Server.Version}}') and compose $$(docker compose version --short) are available."
+
+# Check the Buildx plugin is installed. Only targets that build need it: the legacy builder does not set TARGETARCH,
+# and cli and unit pass BuildKit-only flags
+check_buildx:
 	@if ! docker buildx version >/dev/null 2>&1; then \
 		$(LOGGER) log_error "Docker Buildx (BuildKit) is required: the legacy builder does not set TARGETARCH."; \
-		$(LOGGER) log_indent log_dim "Homebrew: brew install docker-buildx, then link it into ~/.docker/cli-plugins (brew prints the command)."; \
+		$(LOGGER) log_indent log_dim "macOS with Homebrew: brew install docker-buildx, then link it into ~/.docker/cli-plugins (brew prints the command)."; \
+		$(LOGGER) log_indent log_dim "Linux: install docker-buildx-plugin from Docker's apt or dnf repository."; \
 		exit 1; \
 	fi
-	@$(LOGGER) log_info_dim "docker $$(docker version -f '{{.Server.Version}}') and compose $$(docker compose version --short) are available."
+	@$(LOGGER) log_info_dim "buildx $$(docker buildx version | awk '{print $$2}') is available."
 
 # Create .env from .env.example if needed (owner-only), and check every key has a value
 check_env:
@@ -194,11 +200,12 @@ check_image:
 		$(LOGGER) log_error "Image $(IMAGE) not found. Build it with: make build"; \
 		exit 1; \
 	fi
-.PHONY: check ## Verify Docker, .env and its permissions
+.PHONY: check ## Verify Docker, Buildx, .env and its permissions
 check:
 	@$(LOGGER) log_separator
 	@$(LOGGER) log_info "Checking dependencies"
 	@$(MAKE) check_docker
+	@$(MAKE) check_buildx
 	@$(MAKE) check_env
 	@$(MAKE) check_env_perms
 	@$(LOGGER) log_success "Check complete"
@@ -212,7 +219,7 @@ export_ca:
 	@$(SCRIPTS_DIR)/export-ca.bash
 
 .PHONY: build ## Build the go-remote image (trusts a Zscaler root CA when the host has one)
-build: check_docker export_ca
+build: check_docker check_buildx export_ca
 	@$(LOGGER) log_separator
 	@$(LOGGER) log_info "Building $(IMAGE) (agent uid $(USER_UID), gid $(USER_GID))"
 	@docker build \
@@ -223,7 +230,7 @@ build: check_docker export_ca
 	@$(LOGGER) log_success "Built $(IMAGE)"
 
 .PHONY: cli ## Build go-remote for macOS and Linux into dist/ after its unit tests, in Docker
-cli: check_docker export_ca
+cli: check_docker check_buildx export_ca
 	@$(LOGGER) log_separator
 	@$(LOGGER) log_info "Building go-remote into dist/"
 	@docker build --target dist --output "type=local,dest=$(COMMON_MAKEFILE_DIR)dist" \
@@ -377,7 +384,7 @@ test: check_docker check_image
 	@USER_UID=$(USER_UID) USER_GID=$(USER_GID) $(SCRIPTS_DIR)/smoke-test.bash
 
 .PHONY: unit ## Type-check and unit-test go-remote and go-remote-ingress, in Docker
-unit: check_docker export_ca
+unit: check_docker check_buildx export_ca
 	@$(LOGGER) log_separator
 	@$(LOGGER) log_info "Type-checking and unit-testing the TypeScript"
 	@docker build --target test --no-cache-filter test \
@@ -385,7 +392,7 @@ unit: check_docker export_ca
 	@$(LOGGER) log_success "Unit tests passed"
 
 .PHONY: e2e ## Phone end-to-end test through a real BitBang URL, in a throwaway workspace (REPO= tests that one)
-e2e: check_docker check_image export_ca $(GO_REMOTE)
+e2e: check_docker check_buildx check_image export_ca $(GO_REMOTE)
 	@$(LOGGER) log_separator
 	@$(LOGGER) log_info "Building the Playwright test image"
 	@docker build -q -t $(E2E_IMAGE) -f "$(COMMON_MAKEFILE_DIR)e2e/Dockerfile" "$(COMMON_MAKEFILE_DIR)" >/dev/null

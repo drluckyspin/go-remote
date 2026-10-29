@@ -16,8 +16,10 @@ core benefits are the combination of local execution, container isolation, and s
 
 Supported platforms: **macOS** (Apple Silicon and Intel) and **Linux** (x86_64 and arm64). Windows is not supported.
 
-Requires **Docker Desktop** on macOS, or **Docker Engine with Compose v2** on Linux, plus `make` and `git`. Claude Code,
-Codex and the Cursor Agent CLI come in the image; to move a session from your laptop, you need that agent there too.
+Requires **Docker Desktop** on macOS, or **Docker Engine with Compose v2** on Linux, plus `make` and `git`. Building the
+image also needs the **Buildx** plugin: Docker Desktop includes it, but the Homebrew `docker` formula and many Linux
+packages do not. Claude Code, Codex and the Cursor Agent CLI come in the image; to move a session from your laptop, you
+need that agent there too.
 
 ## Why this project?
 
