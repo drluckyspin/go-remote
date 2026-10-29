@@ -73,9 +73,10 @@ go-remote login            # with Claude Code on this computer: sign it in once,
 PATH: add `export PATH="$HOME/.local/bin:$PATH"` to your shell profile, and open a new terminal. The first
 `go-remote start` creates `.env` from `.env.example`, readable by you only. Everything in it is optional.
 
-To upgrade, run `git pull` in the checkout, then `make upgrade`: it installs the new `go-remote` and its `/go-remote`
-skill together, so the two stay the same version. Run `make build` as well when the release notes say the image changed.
-A release that adds a setting stops `go-remote start` until `.env` has it; `make check` offers a `.env.new` with it
+To upgrade, run `git pull` in the checkout, then `make upgrade`: it builds the image and installs the new `go-remote`
+and its `/go-remote` skill, so all three stay the same version. A workspace that is already running keeps the old image
+until it restarts, and `make upgrade` lists any that do; restarting one ends its phone sessions, so it leaves that to
+you. A release that adds a setting stops `go-remote start` until `.env` has it; `make check` offers a `.env.new` with it
 added.
 
 Codex and Cursor sign in inside a running workspace, and so does Claude Code when it is not on this computer. Run
@@ -201,7 +202,7 @@ The make targets wrap the same commands, for use from the checkout. `make help` 
 | `attach` / `logs` / `ping`      | Open the Herdr UI here, follow the log, or list workspaces and their health   |
 | `down`                          | Stop `REPO`'s workspace, or all of them                                       |
 | `install-cli` / `install-skill` | Install `go-remote` and `gr` (`BIN_DIR=` to change where), or the skill       |
-| `upgrade`                       | Both of those in one go, after a `git pull`                                   |
+| `upgrade`                       | `build`, `install-cli` and `install-skill` in one go, after a `git pull`      |
 | `clean` / `clean-home`          | Remove the images, binaries and exported CAs, or (after asking) the logins    |
 
 **`gr` and Oh My Zsh.** `make install-cli` links `gr` to `go-remote`. A `gr` already in that directory that isn't

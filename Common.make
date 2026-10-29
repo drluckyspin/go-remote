@@ -274,11 +274,21 @@ install-cli: $(GO_REMOTE)
 install-skill: $(GO_REMOTE)
 	@$(GR_RUN) install-skill
 
-# The skill is built into the CLI, so the two are installed together to keep them the same version
-.PHONY: upgrade ## Install the CLI and the /go-remote skill from this checkout in one go (git pull first for the latest)
-upgrade: install-cli install-skill
-	@$(LOGGER) log_success "go-remote $$("$(BIN_DIR)/go-remote" --version | awk '{print $$2}') and its skill are installed"
-	@$(LOGGER) log_info_dim "A release that changes the image also needs make build"
+# The CLI, its built-in skill and the image change together: a new CLI on an old image starts agents the old way.
+# Running workspaces keep their image until they restart, and restarting one ends its phone sessions, so they are
+# only listed.
+.PHONY: upgrade ## Build the image and install the CLI and the /go-remote skill from this checkout (git pull first)
+upgrade: build install-cli install-skill
+	@$(LOGGER) log_success "go-remote $$("$(BIN_DIR)/go-remote" --version | awk '{print $$2}'), its skill and the image are up to date"
+	@image=$$(docker image inspect -f '{{.Id}}' $(IMAGE)); \
+	stale=$$(docker ps --filter label=go-remote.repo --filter label=com.docker.compose.service=workspace \
+		--format '{{.ID}} {{.Label "com.docker.compose.project"}}' | while read -r id project; do \
+			[ "$$(docker inspect -f '{{.Image}}' "$$id")" = "$$image" ] || printf '%s ' "$$project"; \
+		done); \
+	if [ -n "$$stale" ]; then \
+		$(LOGGER) log_warning "Still on the old image until they restart: $${stale% }"; \
+		$(LOGGER) log_indent log_dim "go-remote stop <name>, then go-remote start in its repo. Stopping one ends its phone sessions."; \
+	fi
 
 # -----------------------------------------------------------------------------------------------------------
 # Run targets
