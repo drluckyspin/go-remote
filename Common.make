@@ -120,7 +120,7 @@ endif
 # -----------------------------------------------------------------------------------------------------------
 
 .PHONY: help build cli install-cli check run run-detached url login attach ping logs down clean clean-home
-.PHONY: test unit e2e lint format format-check bump-version
+.PHONY: upgrade test unit e2e lint format format-check bump-version
 .PHONY: check_docker check_buildx check_env check_env_perms check_image require_repo export_ca
 .PHONY: check_dprint check_shfmt check_mbake check_shellcheck check_formatters
 
@@ -268,11 +268,17 @@ install-cli: $(GO_REMOTE)
 		*":$(BIN_DIR):"*) ;; \
 		*) $(LOGGER) log_warning "$(BIN_DIR) is not on PATH; add it in your shell profile" ;; \
 	esac
-	@$(LOGGER) log_info_dim "Next: go-remote install-skill adds /go-remote to Claude Code, Codex and Cursor"
+	$(if $(filter upgrade,$(MAKECMDGOALS)),,@$(LOGGER) log_info_dim "Next: go-remote install-skill adds /go-remote to Claude Code, Codex and Cursor")
 
 .PHONY: install-skill ## Install the /go-remote skill for Claude Code, Codex and Cursor
 install-skill: $(GO_REMOTE)
 	@$(GR_RUN) install-skill
+
+# The skill is built into the CLI, so the two are installed together to keep them the same version
+.PHONY: upgrade ## Install the CLI and the /go-remote skill from this checkout in one go (git pull first for the latest)
+upgrade: install-cli install-skill
+	@$(LOGGER) log_success "go-remote $$("$(BIN_DIR)/go-remote" --version | awk '{print $$2}') and its skill are installed"
+	@$(LOGGER) log_info_dim "A release that changes the image also needs make build"
 
 # -----------------------------------------------------------------------------------------------------------
 # Run targets
