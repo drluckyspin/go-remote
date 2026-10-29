@@ -39,12 +39,12 @@ It has three parts: an image with a hardened compose service (one workspace per 
 | Command      | Needs                                        | Takes             | What it covers                                                                   |
 | ------------ | -------------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
 | `make lint`  | dprint, shfmt, mbake, shellcheck, Docker CLI | seconds           | Formatting of every file type, shellcheck, and `docker-compose.yml` validity     |
-| `make unit`  | Docker                                       | seconds, cached   | `tsc --noEmit` and `bun test` for the CLI and the ingress, in Docker             |
+| `make unit`  | Docker with Buildx                           | seconds, cached   | `tsc --noEmit` and `bun test` for the CLI and the ingress, in Docker             |
 | `bun test`   | Bun on the host                              | about a second    | The same unit tests, for quick loops                                             |
-| `make cli`   | Docker                                       | about a minute    | The unit tests, then the four `dist/` binaries                                   |
-| `make build` | Docker                                       | minutes, cached   | The image                                                                        |
+| `make cli`   | Docker with Buildx                           | about a minute    | The unit tests, then the four `dist/` binaries                                   |
+| `make build` | Docker with Buildx                           | minutes, cached   | The image                                                                        |
 | `make test`  | The image                                    | about 90 seconds  | The smoke test: hardening, toolchain and pins, git, both UIs, BitBang end to end |
-| `make e2e`   | The image, and network access to bitba.ng    | about 150 seconds | A phone through a real BitBang URL, the default agent, and a session move        |
+| `make e2e`   | The image, Buildx, and network to bitba.ng   | about 150 seconds | A phone through a real BitBang URL, the default agent, and a session move        |
 
 Which to run:
 
@@ -208,8 +208,12 @@ Keychain or `.env`, and never run a real sign-in. The existing tests show how. U
 (`mkdtempSync`) and pass them in where the real ones would go: a home for `installSkill()`, `Stores` for sessions,
 `XDG_CONFIG_HOME` for the config. The e2e test points `CLAUDE_CONFIG_DIR` at a temporary laptop, uses `GR_ENV_FILE` and
 `GR_HOME_VOLUME` for a throwaway env file and volume, and answers Claude Code with the stand-in Anthropic API. To try
-`make install-cli`, point `HOME`, `XDG_CONFIG_HOME` and `BIN_DIR` at a temporary directory: it runs `go-remote setup`,
-which writes its config under `XDG_CONFIG_HOME` whenever that is set.
+`make install-cli` or `make upgrade`, point `HOME`, `XDG_CONFIG_HOME` and `BIN_DIR` at a temporary directory: they run
+`go-remote setup`, which writes its config under `XDG_CONFIG_HOME` whenever that is set, and `upgrade` installs the
+skill under that `HOME`. Set `DOCKER_CONFIG=$HOME/.docker` from the real home first, or Docker loses its Buildx plugin.
+`go-remote stop` and `make down` stop every workspace after asking; try them with throwaway containers that carry a
+workspace's labels (`go-remote.repo`, `com.docker.compose.service=workspace`, `com.docker.compose.project`), and only
+when `docker ps -a --filter label=go-remote.repo` shows no real ones.
 
 ## Git and pull requests
 

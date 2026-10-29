@@ -19,8 +19,9 @@ agents hand over a written brief instead. The `go-remote` CLI does the work.
   `.env` each grant access, and anything you read goes to a model provider. Do not print, read, copy or ask for them.
   Run `go-remote` with `--json`: its output never contains them, and the QR code opens in a window on the user's screen
   instead. Do not run `go-remote logs`, `docker logs` or `go-remote qr` without `--json`, and do not open the QR image.
-- **Never push, commit, or stop a workspace** unless the user asks. Ask before running `go-remote stop`.
-- If `go-remote` is not installed, tell the user to run `make install-cli` in their go-remote checkout, and stop.
+- **Never push, commit, or stop a workspace** unless the user asks. Ask before running `go-remote stop`, and name the
+  repo (`go-remote stop "$(git rev-parse --show-toplevel)"`): without one, outside a repo, it stops every workspace.
+- If `go-remote` is not installed, tell the user to run `make upgrade` in their go-remote checkout, and stop.
 
 ## Steps
 
