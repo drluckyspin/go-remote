@@ -110,7 +110,8 @@ go-remote start --resume claude:<id>    # continue it in the container, and open
 - **Forking.** `--fork` continues a copy instead, so the laptop's session can continue too.
 - **Handoff notes.** `--brief notes.md` copies a handoff note to `.go-remote/handoff.md` in the repo, which git ignores,
   and asks the agent to read it. `/go-remote` in an agent `go-remote` cannot resume yet, such as Cursor, writes a brief
-  and starts Claude Code with it.
+  and starts Claude Code with it, on the model the brief's `Model:` line names (see
+  [choosing the model](#choosing-the-model)).
 - **Moving back.** Quit the agent in the container, then run `go-remote pull`. It copies the container's sessions for
   the repo back, keeps a `.bak` of any laptop copy it replaces, and prints the command that resumes the session here. A
   session you carried on here since is left alone, and one still open here is not replaced until you quit it.

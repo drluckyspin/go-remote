@@ -139,7 +139,7 @@ page's markup. herdr-web-ui is pinned to a commit, and `make e2e` catches a rele
      answers the agents' first-run questions (`go-remote-agent prepare`). It then starts the Herdr server and gives the
      repo a workspace whose first tab is Repo Shell.
    - `start_default_agent` runs `go-remote-agent watch`, which starts the default agent (`GR_DEFAULT_AGENT`) in its own
-     tab as soon as one is signed in.
+     tab as soon as one is signed in, on `GR_MODEL` when that is set.
    - `start_web_ui` starts herdr-web-ui from source, with a random access token kept in the tmpfs and auto-update and
      telemetry off, then the ingress in front of it.
    - `start_alerts` starts `go-remote-alerts` when `GR_NTFY_TOPIC` is set.
@@ -309,8 +309,9 @@ a much slower connection.
 - **Secrets reach the container only through compose's `env_file`.** Compose never interpolates them, so a key exported
   in the host shell cannot override `.env` or leak into a container that can be reached remotely.
 - **The default agent** is started by `go-remote-agent watch` once one is signed in: with `GR_DEFAULT_AGENT=auto`, the
-  first of Claude Code, Codex and Cursor. An agent that opened at its sign-in screen is restarted in its tab after a
-  sign-in elsewhere, so a sign-in never needs a container restart.
+  first of Claude Code, Codex and Cursor. A plain model id in `GR_MODEL` becomes `--model`; anything else is logged and
+  ignored, so it never reaches the command line. An agent that opened at its sign-in screen is restarted in its tab
+  after a sign-in elsewhere, so a sign-in never needs a container restart.
 
 ## Alerts
 
