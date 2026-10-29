@@ -282,11 +282,16 @@ install-cli: $(GO_REMOTE)
 
 .PHONY: install-skill ## Install the /go-remote skill for Claude Code, Codex and Cursor
 install-skill: $(GO_REMOTE)
-	@$(GR_RUN) install-skill
+	@$(GR_RUN) install-skill$(if $(filter upgrade,$(MAKECMDGOALS)), --embedded)
 
 # The CLI, its built-in skill and the image change together: a new CLI on an old image starts agents the old way.
-# Running workspaces keep their image until they restart, and restarting one ends its phone sessions, so they are
-# only listed.
+# So under upgrade nothing is installed until the image builds, even with make -j, and the skill is the CLI's own
+# copy rather than whatever skills.sh publishes. Running workspaces keep their image until they restart, and
+# restarting one ends its phone sessions, so they are only listed.
+ifneq ($(filter upgrade,$(MAKECMDGOALS)),)
+install-cli install-skill: build
+endif
+
 .PHONY: upgrade ## Build the image and install the CLI and the /go-remote skill from this checkout (git pull first)
 upgrade: build install-cli install-skill
 	@$(LOGGER) log_success "go-remote $$("$(BIN_DIR)/go-remote" --version | awk '{print $$2}'), its skill and the image are up to date"

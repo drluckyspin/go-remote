@@ -216,6 +216,7 @@ Add `alias gr=go-remote` to `~/.zshrc`, after the line that loads Oh My Zsh.
 
 `go-remote install-skill` offers to install the published skill from [skills.sh](https://skills.sh) with the official
 `skills` CLI, when it is available there. Otherwise, or if you decline, it installs the copy built into `go-remote`.
+`--embedded` installs that copy without asking, which is what `make upgrade` does, so the skill matches the CLI.
 
 ## Configuration
 

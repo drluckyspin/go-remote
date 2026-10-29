@@ -6,7 +6,7 @@ import { doctor } from "./commands/doctor.ts";
 import { login } from "./commands/login.ts";
 import { saveRoot } from "./config.ts";
 import { pull, sessions } from "./commands/sessions.ts";
-import { installPreferredSkill } from "./commands/skill.ts";
+import { installPreferredSkill, installSkill } from "./commands/skill.ts";
 import { start } from "./commands/start.ts";
 import { attach, logs, ls, qr, stop } from "./commands/workspaces.ts";
 import type { View } from "./link.ts";
@@ -48,7 +48,7 @@ ${helpRows([
   ["logs [path]", "Show a workspace's logs with its URL taken out (--no-follow, --tail <n>)."],
   ["stop [path]", "Stop a workspace: the one for the repo you are in, else, after asking, every one (--all asks too,", "--yes skips the question). Logins stay in the home volume."],
   ["doctor", "Check Docker, the image, .env and the agent CLIs on this computer."],
-  ["install-skill", "Install the /go-remote skill for Claude Code, Codex and Cursor."],
+  ["install-skill", "Install the /go-remote skill for Claude Code, Codex and Cursor (--embedded: the copy built into", "this go-remote, without offering skills.sh's)."],
   ["setup --root <dir>", "Remember the go-remote checkout (make install-cli runs this)."],
 ])}
 
@@ -211,9 +211,10 @@ async function main(argv: string[]): Promise<number> {
       return result.ok ? 0 : 1;
     }
     case "install-skill": {
-      const { values } = parse(rest, {});
+      const { values } = parse(rest, { embedded: { type: "boolean" } });
       if (values.help) break;
-      await installPreferredSkill();
+      if (values.embedded) installSkill();
+      else await installPreferredSkill();
       return 0;
     }
     case "setup": {
