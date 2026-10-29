@@ -1,8 +1,8 @@
 # Go Remote teaser
 
-A 57-second product teaser for go-remote, built with [Remotion](https://www.remotion.dev). Every frame is React: the
-laptop, the Claude Code session, the container, the QR code, the phone and herdr-web-ui are components, and all text is
-rendered rather than baked into images.
+A product teaser for go-remote, built with [Remotion](https://www.remotion.dev). Every frame is React: the laptop, the
+Claude Code session, the container, the QR code, the phone and herdr-web-ui are components, and all text is rendered
+rather than baked into images.
 
 ## Commands
 
