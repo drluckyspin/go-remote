@@ -37,7 +37,7 @@ agent's session from the laptop into the container and back.
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <img src="docs/how-it-works.png" alt="The phone connects over WebRTC to the workspace container, where bitbang serve, go-remote-ingress, herdr-web-ui and Herdr lead to Claude Code, Codex and Cursor" width="1000">
+  <img src="docs/how-it-works.png" alt="Marchitecture diagram of system flow" width="1000">
 </p>
 <!-- markdownlint-enable MD033 -->
 
