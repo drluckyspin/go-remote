@@ -398,6 +398,10 @@ clean: check_docker
 	@$(LOGGER) log_separator
 	@$(LOGGER) log_info "Cleaning $(PROJECT_NAME) resources"
 	@$(MAKE) down REPO=
+	@if [ -n "$$(docker ps -aq --filter label=go-remote.repo)" ]; then \
+		$(LOGGER) log_error "Workspaces are still there, so nothing was removed. Stop them first: make down"; \
+		exit 1; \
+	fi
 	@$(LOGGER) log_indent log_dim "Removing images $(IMAGE) and $(E2E_IMAGE)..."
 	@docker image rm $(IMAGE) $(E2E_IMAGE) >/dev/null 2>&1 || true
 	@$(LOGGER) log_indent log_dim "Removing dist/, exported CAs and .env backup files..."
