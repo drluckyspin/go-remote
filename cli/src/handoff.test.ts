@@ -1,6 +1,6 @@
 import { CryptoHasher } from "bun";
 import { expect, test } from "bun:test";
-import { compareCopy, type ContainerFile, groupSessions, linkTarget, parseDefaultAgent, pullable, pullState, tabLabel } from "./handoff.ts";
+import { briefModel, compareCopy, type ContainerFile, groupSessions, linkTarget, parseDefaultAgent, pullable, pullState, tabLabel } from "./handoff.ts";
 import { claudeProjectDir } from "./sessions.ts";
 
 test("compareCopy: a container copy the laptop's extends is older; a longer or different one has diverged", () => {
@@ -122,4 +122,14 @@ test("agent tabs are labelled for people, while the agent keeps its name", () =>
   expect(tabLabel("claude", "claude-2")).toBe("Claude 2");
   expect(tabLabel("codex", "codex-3")).toBe("Codex 3");
   expect(tabLabel("cursor", "cursor")).toBe("Cursor");
+});
+
+test("briefModel: reads a Model line near the top, and only a plain model id", () => {
+  expect(briefModel("Model: claude-opus-5-5\n\n# Goal\n")).toBe("claude-opus-5-5");
+  expect(briefModel("# Handoff\nmodel:   opus  \n")).toBe("opus");
+  expect(briefModel("# Goal\nNo model line here\n")).toBeUndefined();
+  expect(briefModel("Model: Opus 5.5\n")).toBeUndefined();
+  expect(briefModel("Model: $(touch x)\n")).toBeUndefined();
+  expect(briefModel("Model: --dangerously-skip-permissions\n")).toBeUndefined();
+  expect(briefModel(`${"\n".repeat(25)}Model: claude-opus-5-5\n`)).toBeUndefined();
 });

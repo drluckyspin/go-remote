@@ -48,8 +48,10 @@ agents hand over a written brief instead. The `go-remote` CLI does the work.
    waits for this turn to end. Codex: go-remote needs Docker, so it has to run outside Codex's own sandbox.
 
    For any other agent, write a brief to `.go-remote/handoff.md` at the repo root (go-remote keeps `.go-remote/` out of
-   git): the goal, what is done, what is next, decisions and open questions, the files involved, and how to test. No
-   secrets. Then start a new agent with it (`--agent codex` if the user prefers Codex):
+   git): a first line `Model: <id>` naming the model you are running on, as the new agent's own CLI spells it (for
+   Claude Code `claude-opus-5-5` or the alias `opus`; leave the line out if you are not sure), then the goal, what is
+   done, what is next, decisions and open questions, the files involved, and how to test. No secrets. Then start a new
+   agent with it (`--agent codex` if the user prefers Codex):
 
    ```bash
    go-remote start "$(git rev-parse --show-toplevel)" --json --agent claude --brief .go-remote/handoff.md --open chat

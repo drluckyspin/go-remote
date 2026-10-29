@@ -157,6 +157,19 @@ Cursor was added this way, in [pull request #4](https://github.com/drluckyspin/g
   `doctor` and `login`.
 - Document any API key in `.env.example`, and add a smoke check.
 
+### Set the agent's model
+
+go-remote never reads the model an agent runs on; herdr-web-ui's pill only reports the last model in the transcript, and
+is not clickable. A fresh agent gets `--model <id>` from two places, and a resumed session gets none:
+
+- the `Model:` line of `.go-remote/handoff.md`, read by `briefModel()` in `cli/src/handoff.ts`, which wins;
+- `GR_MODEL`, read in the container by `containerModel()` for `go-remote start`, and by `start_in_pane` in
+  `docker/agent.bash` for the default agent.
+
+Both check the value against the same plain-id pattern, because an agent writes the brief and a flag or shell word must
+never reach a command line. Change the pattern in both places together. A new agent kind needs no change if its CLI
+takes `--model`.
+
 ### Add a setting
 
 - Name it `GR_*` and document it in `.env.example`.

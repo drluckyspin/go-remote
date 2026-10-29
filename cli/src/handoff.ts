@@ -176,6 +176,28 @@ export function tabLabel(agent: AgentKind, name: string): string {
   return name === agent ? title : `${title} ${name.slice(agent.length + 1)}`;
 }
 
+// The only shape that reaches --model, so a flag or a shell word never gets onto a command line. docker/agent.bash
+// checks GR_MODEL against the same pattern.
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+
+/**
+ * The model a handoff brief asks for, from a `Model: <id>` line near its top. The writing agent knows its own model and
+ * go-remote cannot see it, so the brief carries it. An agent writes the brief, so anything that is not a plain model id
+ * is ignored.
+ */
+export function briefModel(text: string): string | undefined {
+  const found = /^model:[ \t]*(\S+)[ \t]*$/im.exec(text.split("\n").slice(0, 20).join("\n"));
+  return found?.[1] && MODEL_ID.test(found[1]) ? found[1] : undefined;
+}
+
+/** The container's GR_MODEL (from .env, through compose): the model a new agent starts on when the brief names none. */
+export async function containerModel(workspace: Workspace): Promise<string | undefined> {
+  const result = await capture(["docker", "exec", workspace.id, "printenv", "GR_MODEL"]);
+  // only printenv's newline: docker/agent.bash sees the value untrimmed, and both must accept the same values
+  const value = result.stdout.replace(/\n$/, "");
+  return result.code === 0 && MODEL_ID.test(value) ? value : undefined;
+}
+
 /**
  * Starts an agent in a new tab at `cwd`, so the repo's own shell stays as it was. Returns the agent's name,
  * its tab's label, its pane, and whether Herdr saw it come up ready for input.
