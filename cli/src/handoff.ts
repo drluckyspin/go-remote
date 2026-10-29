@@ -193,7 +193,8 @@ export function briefModel(text: string): string | undefined {
 /** The container's GR_MODEL (from .env, through compose): the model a new agent starts on when the brief names none. */
 export async function containerModel(workspace: Workspace): Promise<string | undefined> {
   const result = await capture(["docker", "exec", workspace.id, "printenv", "GR_MODEL"]);
-  const value = result.stdout.trim();
+  // only printenv's newline: docker/agent.bash sees the value untrimmed, and both must accept the same values
+  const value = result.stdout.replace(/\n$/, "");
   return result.code === 0 && MODEL_ID.test(value) ? value : undefined;
 }
 
