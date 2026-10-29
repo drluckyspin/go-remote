@@ -204,7 +204,7 @@ The make targets wrap the same commands, for use from the checkout. `make help` 
 | `url`                           | Show a fresh QR code (`QR=false` prints only the link)                        |
 | `login`                         | Sign Claude Code (or `AGENT=codex` or `AGENT=cursor`) in, for every workspace |
 | `attach` / `logs` / `ping`      | Open the Herdr UI here, follow the log, or list workspaces and their health   |
-| `down`                          | Stop `REPO`'s workspace, or all of them                                       |
+| `down`                          | Stop `REPO`'s workspace, or all of them after asking (`YES=1` skips it)       |
 | `install-cli` / `install-skill` | Install `go-remote` and `gr` (`BIN_DIR=` to change where), or the skill       |
 | `upgrade`                       | `build`, `install-cli` and `install-skill` in one go, after a `git pull`      |
 | `clean` / `clean-home`          | Remove the images, binaries and exported CAs, or (after asking) the logins    |

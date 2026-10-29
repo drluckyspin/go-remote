@@ -121,7 +121,7 @@ endif
 
 .PHONY: help build cli install-cli check run run-detached url login attach ping logs down clean clean-home
 .PHONY: upgrade test unit e2e lint format format-check bump-version
-.PHONY: check_docker check_buildx check_env check_env_perms check_image require_repo export_ca
+.PHONY: check_docker check_buildx check_env check_env_perms check_project_repo check_image require_repo export_ca
 .PHONY: check_dprint check_shfmt check_mbake check_shellcheck check_formatters
 
 .PHONY: help ## Show this help message
@@ -191,6 +191,16 @@ check_env_perms:
 require_repo:
 	@if [ -z "$(REPO_EXPANDED)" ]; then \
 		$(LOGGER) log_error "Pass the repo to mount, e.g. make run REPO=~/src/my-repo"; \
+		exit 1; \
+	fi
+
+# The project name is the repo's directory name, so two repos can share it: refuse to stop another repo's workspace
+check_project_repo:
+	@[ -n "$(REPO_EXPANDED)" ] || exit 0; \
+	repo="$(or $(REPO_PATH),$(REPO_EXPANDED))"; \
+	existing=$$(docker ps -a --filter label=com.docker.compose.project=$(PROJECT) --format '{{.Label "go-remote.repo"}}' | head -n 1); \
+	if [ -n "$$existing" ] && [ "$$existing" != "$$repo" ]; then \
+		$(LOGGER) log_error "$(PROJECT) serves $$existing, not $$repo. Stop it with: make down REPO=$$existing"; \
 		exit 1; \
 	fi
 
@@ -346,12 +356,27 @@ ping: check_docker
 		esac; \
 	done
 
-.PHONY: down ## Stop REPO's workspace, or every workspace when REPO is not given (keeps the home volume)
+# Stopping a workspace ends its phone sessions, so stopping all of them asks first, as go-remote stop does. It does not
+# call go-remote: that would build the CLI, which needs Buildx, and stopping must work without it.
+.PHONY: down ## Stop REPO's workspace, or every workspace after asking when REPO is not given (YES=1 skips the question)
 down: check_docker check_project_repo
 	@projects="$(if $(REPO_EXPANDED),$(PROJECT),$(WORKSPACE_PROJECTS))"; \
 	if [ -z "$$projects" ]; then \
 		$(LOGGER) log_info_dim "No workspaces to stop."; \
 		exit 0; \
+	fi; \
+	if [ -z "$(REPO_EXPANDED)" ] && [ "$(YES)" != 1 ]; then \
+		names=$$(printf '%s\n' $$projects | paste -sd ',' - | sed 's/,/, /g'); \
+		if [ ! -t 0 ]; then \
+			$(LOGGER) log_error "Not stopping $$names without asking"; \
+			$(LOGGER) log_indent log_dim "Pass YES=1 to stop them, or REPO= to stop one."; \
+			exit 1; \
+		fi; \
+		read -r -p "Stop every workspace ($$names)? Their phone sessions end. [y/N] " answer; \
+		case "$$answer" in \
+			[yY] | [yY][eE][sS]) ;; \
+			*) $(LOGGER) log_info_dim "Nothing stopped."; exit 0 ;; \
+		esac; \
 	fi; \
 	for project in $$projects; do \
 		repo=$$(docker ps -a --filter label=com.docker.compose.project=$$project --format '{{.Label "go-remote.repo"}}' | head -n 1); \
