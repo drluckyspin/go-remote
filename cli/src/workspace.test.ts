@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { compose, pickWorkspace, projectName, relayForced, reservedConflict, resolveRepo, uiMode, type Workspace } from "./workspace.ts";
+import { compose, pickWorkspace, projectName, relayForced, reservedConflict, resolveRepo, stopTargets, uiMode, type Workspace } from "./workspace.ts";
 
 test("compose reads its settings from the env file GR_ENV_FILE picks, when it exists", () => {
   const root = mkdtempSync(join(tmpdir(), "go-remote-compose-"));
@@ -125,5 +125,19 @@ describe("pickWorkspace", () => {
     mkdirSync(join(dir, "app-two"));
     const both = [workspace(join(dir, "app")), workspace(join(dir, "other"))];
     expect(() => pickWorkspace(both, undefined, join(dir, "app-two"))).toThrow("Several workspaces exist");
+  });
+
+  test("stopTargets: the repo's own workspace inside it, else all of them, asking before stopping several", () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), "go-remote-stop-")));
+    const here = workspace(dir);
+    const all = [workspace("/nonexistent/src/a"), here, workspace("/nonexistent/src/b")];
+    expect(stopTargets(all, { all: false }, dir)).toEqual({ targets: [here], ask: false });
+    expect(stopTargets(all, { target: "go-remote-a", all: false }, dir)).toEqual({ targets: all.slice(0, 1), ask: false });
+    expect(stopTargets(all, { all: false }, tmpdir())).toEqual({ targets: all, ask: true });
+    expect(stopTargets(all.slice(0, 1), { all: false }, tmpdir())).toEqual({ targets: all.slice(0, 1), ask: false });
+    expect(stopTargets(all, { all: true }, dir)).toEqual({ targets: all, ask: true });
+    expect(stopTargets(all.slice(0, 1), { all: true }, dir)).toEqual({ targets: all.slice(0, 1), ask: true });
+    expect(stopTargets([], { all: false }, tmpdir())).toEqual({ targets: [], ask: false });
+    expect(stopTargets([], { all: true }, tmpdir())).toEqual({ targets: [], ask: false });
   });
 });

@@ -4,8 +4,8 @@ import { agents, defaultAgent, linkTarget, mainPane } from "../handoff.ts";
 import { redact, type View } from "../link.ts";
 import { type LinkOptions, showLink } from "../present.ts";
 import { inherit } from "../proc.ts";
-import { printable, ui, UserError } from "../ui.ts";
-import { attach as attachTo, checkDocker, compose, findWorkspace, listWorkspaces, requireRunning, waitForListener } from "../workspace.ts";
+import { confirm, printable, ui, UserError } from "../ui.ts";
+import { attach as attachTo, checkDocker, compose, findWorkspace, listWorkspaces, requireRunning, stopTargets, waitForListener } from "../workspace.ts";
 
 export async function qr(options: LinkOptions & { path?: string; open?: View; pane?: string }): Promise<Record<string, unknown>> {
   await checkDocker();
@@ -93,11 +93,25 @@ export async function logs(options: { path?: string; follow: boolean; tail: stri
   return child.exited;
 }
 
-export async function stop(options: { path?: string; all: boolean; root?: string }): Promise<void> {
+export async function stop(options: { path?: string; all: boolean; yes: boolean; root?: string }): Promise<void> {
   await checkDocker();
   const root = resolveRoot(options.root);
-  const targets = options.all ? await listWorkspaces() : [await findWorkspace(options.path)];
-  if (targets.length === 0) ui.infoDim("No workspaces to stop.");
+  const { targets, ask } = stopTargets(await listWorkspaces(), { target: options.path, all: options.all });
+  if (targets.length === 0) {
+    ui.infoDim("No workspaces to stop.");
+    return;
+  }
+  if (ask && !options.yes) {
+    const names = targets.map((workspace) => workspace.project).join(", ");
+    if (process.stdin.isTTY !== true || process.stderr.isTTY !== true) {
+      throw new UserError(`Not stopping ${names} without asking`, "Pass --yes to stop them, or name one: go-remote stop ~/src/my-repo");
+    }
+    const what = targets.length === 1 ? names : `all ${targets.length} workspaces (${names})`;
+    if (!(await confirm(`Stop ${what}? Their phone sessions end.`))) {
+      ui.infoDim("Nothing stopped.");
+      return;
+    }
+  }
   for (const workspace of targets) {
     ui.info(`Stopping ${workspace.project}`);
     const code = await inherit([...compose(root, workspace.project), "down", "--remove-orphans"], {

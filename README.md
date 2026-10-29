@@ -180,7 +180,7 @@ The row fits a 48-column phone screen, and the laptop sees it too. `GR_KEY_BAR=f
 | `pull [path] [agent:id]`               | Copy the container's sessions back to this computer                                                          |
 | `attach [path]`                        | Open the Herdr UI in this terminal (`--shell` for the tmux session)                                          |
 | `logs [path]`                          | Show the container log, with the URL taken out                                                               |
-| `stop [path]`                          | Stop a workspace (`--all` stops every one); logins stay in the home volume                                   |
+| `stop [path]`                          | Stop a workspace, or every one after asking (`--all`, `--yes`); logins stay in the home volume               |
 | `doctor`                               | Check Docker, the image and its pins, `.env`, and the agent CLIs on this computer                            |
 | `install-skill`                        | Install the `/go-remote` skill for Claude Code, Codex and Cursor                                             |
 
@@ -191,6 +191,10 @@ shown only on an interactive terminal: otherwise the QR code opens in a window. 
 the repo's path or the workspace's name as `list` shows it, which still works after its repo has moved:
 `go-remote stop go-remote-my-repo`. `login` signs in inside the named workspace, or any running one, since they share
 their sign-ins.
+
+`stop` outside any repo, with several workspaces, stops all of them, and so does `stop --all`. Stopping a workspace ends
+its phone sessions, so both ask first; `--yes` skips the question, and without a terminal to ask on, `stop` refuses
+unless it is given.
 
 The make targets wrap the same commands, for use from the checkout. `make help` lists them all:
 

@@ -46,7 +46,7 @@ ${helpRows([
   ["pull [path] [agent:id]", "Copy the container's sessions for a repo back to this computer."],
   ["attach [path]", "Open the workspace's Herdr terminal UI here (--shell for the tmux shell)."],
   ["logs [path]", "Show a workspace's logs with its URL taken out (--no-follow, --tail <n>)."],
-  ["stop [path]", "Stop a workspace (--all stops every one); logins stay in the home volume."],
+  ["stop [path]", "Stop a workspace: the one for the repo you are in, else, after asking, every one (--all asks too,", "--yes skips the question). Logins stay in the home volume."],
   ["doctor", "Check Docker, the image, .env and the agent CLIs on this computer."],
   ["install-skill", "Install the /go-remote skill for Claude Code, Codex and Cursor."],
   ["setup --root <dir>", "Remember the go-remote checkout (make install-cli runs this)."],
@@ -61,8 +61,8 @@ ${helpRows([
 ])}
 
 The path defaults to the current directory for start and sessions. The other commands take the workspace for the repo
-you are in, else the only one, and otherwise need the repo's path or the workspace's name, as go-remote list shows it:
-go-remote stop /path/to/repo.
+you are in, else the only one (stop: else all of them), and otherwise need the repo's path or the workspace's name, as
+go-remote list shows it: go-remote stop /path/to/repo.
 `;
 
 const LINK_OPTIONS = {
@@ -198,9 +198,9 @@ async function main(argv: string[]): Promise<number> {
       return logs({ path: atMostOnePath(positionals), follow: values["no-follow"] !== true, tail: values.tail ?? "100" });
     }
     case "stop": {
-      const { values, positionals } = parse(rest, { ...ROOT_OPTION, all: { type: "boolean" } });
+      const { values, positionals } = parse(rest, { ...ROOT_OPTION, all: { type: "boolean" }, yes: { type: "boolean" } });
       if (values.help) break;
-      await stop({ path: atMostOnePath(positionals), all: values.all === true, root: values.root });
+      await stop({ path: atMostOnePath(positionals), all: values.all === true, yes: values.yes === true, root: values.root });
       return 0;
     }
     case "doctor": {
