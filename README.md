@@ -1,6 +1,7 @@
 # Go Remote
 
-**Go Remote lets you seamlessly move your coding agent session to your phone or browser, without moving any files to the cloud.**
+**Go Remote lets you seamlessly move your coding agent session to your phone or browser, without moving any files to the
+cloud.**
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
@@ -411,21 +412,21 @@ connect through the proxy, temporarily turn off Zscaler Internet Security to con
 Every component in the image is pinned, and checksum-verified where its project publishes one. `go-remote doctor` shows
 the versions in the image you built.
 
-| Component        | go-remote 0.1.0 | go-remote 0.2.0    | go-remote 0.3.0    | go-remote 0.4.0    |
-| ---------------- | --------------- | ------------------ | ------------------ | ------------------ |
-| BitBang          | 0.5.1           | 0.5.1              | 0.5.1              | 0.5.1              |
-| Claude Code      | 2.1.302         | 2.1.302            | 2.1.302            | 2.1.302            |
-| Codex            | 0.163.0         | 0.163.0            | 0.163.0            | 0.163.0            |
-| Cursor Agent CLI | not included    | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 |
-| Herdr            | not included    | 0.9.5              | 0.9.5              | 0.9.5              |
-| herdr-web-ui     | not included    | 0.4.11             | 0.4.11             | 0.4.11             |
-| Bun              | not included    | 1.4.2              | 1.4.2              | 1.4.2              |
-| uv               | 0.13.1          | 0.13.1             | 0.13.1             | 0.13.1             |
-| dprint           | not included    | not included       | not included       | not included       |
-| shfmt            | not included    | not included       | not included       | not included       |
-| ShellCheck       | not included    | not included       | not included       | not included       |
-| mbake            | not included    | not included       | not included       | not included       |
-| Node.js          | 24              | 24                 | 24                 | 24                 |
+| Component        | go-remote 0.1.0 | go-remote 0.2.0    | go-remote 0.3.0    | go-remote 0.4.0    | go-remote 0.4.2    |
+| ---------------- | --------------- | ------------------ | ------------------ | ------------------ | ------------------ |
+| BitBang          | 0.5.1           | 0.5.1              | 0.5.1              | 0.5.1              | 0.5.1              |
+| Claude Code      | 2.1.302         | 2.1.302            | 2.1.302            | 2.1.302            | 2.1.302            |
+| Codex            | 0.163.0         | 0.163.0            | 0.163.0            | 0.163.0            | 0.163.0            |
+| Cursor Agent CLI | not included    | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 | 2026.10.16-e3cb207 |
+| Herdr            | not included    | 0.9.5              | 0.9.5              | 0.9.5              | 0.9.5              |
+| herdr-web-ui     | not included    | 0.4.11             | 0.4.11             | 0.4.11             | 0.4.11             |
+| Bun              | not included    | 1.4.2              | 1.4.2              | 1.4.2              | 1.4.2              |
+| uv               | 0.13.1          | 0.13.1             | 0.13.1             | 0.13.1             | 0.13.1             |
+| dprint           | not included    | not included       | not included       | not included       | 0.63.0             |
+| shfmt            | not included    | not included       | not included       | not included       | 3.14.1             |
+| ShellCheck       | not included    | not included       | not included       | not included       | 0.11.0             |
+| mbake            | not included    | not included       | not included       | not included       | 1.4.6              |
+| Node.js          | 24              | 24                 | 24                 | 24                 | 24                 |
 
 ## Project layout
 
