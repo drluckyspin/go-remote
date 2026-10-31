@@ -170,15 +170,15 @@ RUN set -eux; \
   install -m 0755 "/tmp/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck; \
   rm -rf /tmp/shfmt /tmp/shellcheck.tar.gz "/tmp/shellcheck-v${SHELLCHECK_VERSION}"
 
-# mbake and every package it needs come from PyPI pinned with hashes, into their own environment. mbake looks for a
-# newer release only for `--version` and `mbake update`, and cannot update itself on the read-only filesystem.
+# mbake and every package it needs come from PyPI pinned with hashes, into their own environment. mbake asks PyPI for
+# a newer release on `--version`, so a wrapper answers that; it cannot update itself on the read-only filesystem.
 COPY docker/mbake-requirements.txt /tmp/mbake-requirements.txt
+COPY docker/mbake.bash /usr/local/bin/mbake
 RUN set -eux; \
   grep -q "^mbake==${MBAKE_VERSION} " /tmp/mbake-requirements.txt; \
   UV_PYTHON_DOWNLOADS=never uv venv --quiet --python /usr/bin/python3 /opt/mbake; \
   UV_CACHE_DIR=/tmp/uv-cache uv pip install --quiet --python /opt/mbake/bin/python --require-hashes \
     -r /tmp/mbake-requirements.txt; \
-  ln -s /opt/mbake/bin/mbake /usr/local/bin/mbake; \
   rm -rf /tmp/uv-cache /tmp/mbake-requirements.txt
 
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
