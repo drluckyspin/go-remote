@@ -16,5 +16,5 @@ alias gs='git status -sb'
 alias gd='git diff'
 alias gl='git log --oneline --graph --decorate -20'
 alias gcb='git checkout -b'
-# Oh My Zsh's meaning: the main branch, or master in a repo that has no main.
-alias gcm='git checkout "$(git show-ref -q --verify refs/heads/main && echo main || echo master)"'
+# Oh My Zsh's meaning: check out main, even one that exists only on origin, or master in a repo without main.
+alias gcm='git checkout "$(git show-ref -q --verify refs/heads/main || git show-ref -q --verify refs/remotes/origin/main && echo main || echo master)"'
