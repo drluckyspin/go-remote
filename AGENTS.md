@@ -182,6 +182,21 @@ takes `--model`.
 - A setting that is not secret goes in compose's `environment:` with a default, `GR_X: ${GR_X:-default}`.
 - Existing users get new keys from `scripts/checkenv.bash`, which offers a `.env.new` with them added.
 
+### Publish the image or the CLI
+
+go-remote ships neither: the image and the `go-remote` executables are built on each user's machine. Pushing the image
+to a registry, or handing out the executables, would redistribute what they carry, and some of it cannot simply be
+passed on. Before anyone does, go through `THIRD_PARTY_NOTICES.md`, and settle at least these:
+
+- **ShellCheck is GPL-3.0.** A published image distributes its binary, so it must come with the license text and an
+  offer of the matching source, or be left out of the published image.
+- **Claude Code and the Cursor Agent CLI are proprietary.** A published image may not carry them without permission from
+  Anthropic and Cursor; it would have to fetch them on the user's machine instead.
+- **Bun statically links JavaScriptCore, which is LGPL-2,** into the image and every `go-remote` executable. Check
+  [Bun's licensing page](https://bun.sh/docs/project/licensing) for what that requires.
+
+A new component with a copyleft or proprietary license gets a line in this list.
+
 ## Security rules
 
 These hold the design together. A change that weakens one says so, and why, in its pull request.
