@@ -1,6 +1,6 @@
 # Go Remote
 
-**Go Remote lets you seamlessly move your coding agent session to your phone, without moving any files to the cloud.**
+**Go Remote lets you seamlessly move your coding agent session to your phone or browser, without moving any files to the cloud.**
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
