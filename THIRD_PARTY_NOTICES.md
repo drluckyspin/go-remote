@@ -16,9 +16,14 @@ against them.
 | [Codex CLI](https://github.com/openai/codex)                           | Apache-2.0                 | Installed from npm when the image is built                                        | Its npm package                           |
 | [Cursor Agent CLI](https://cursor.com/cli)                             | Cursor's terms             | Release archive downloaded from Cursor when the image is built, checksum-verified | [Cursor's terms of service][cursor-terms] |
 | [uv](https://github.com/astral-sh/uv)                                  | MIT or Apache-2.0          | Copied from its official image                                                    | Its repository                            |
+| [dprint](https://github.com/dprint/dprint)                             | MIT                        | Release binary in the image, checksum-verified                                    | `third_party/dprint/LICENSE`              |
+| [shfmt](https://github.com/mvdan/sh)                                   | BSD-3-Clause               | Release binary in the image, checksum-verified                                    | `third_party/shfmt/LICENSE`               |
+| [ShellCheck](https://github.com/koalaman/shellcheck)                   | GPL-3.0                    | Release binary in the image, checksum-verified                                    | `third_party/shellcheck/LICENSE`          |
+| [mbake](https://github.com/EbodShojaei/bake)                           | MIT                        | Installed from PyPI with its dependencies, hash-pinned                            | `third_party/mbake/LICENSE`               |
 
 The image keeps the files under `third_party/` in `/usr/local/share/doc/go-remote/third_party/`. The base image
-(`node:24-trixie-slim`) and the Debian packages installed on it carry their own notices in `/usr/share/doc`.
+(`node:24-trixie-slim`) and the Debian packages installed on it carry their own notices in `/usr/share/doc`, and mbake's
+Python dependencies carry theirs in `/opt/mbake`.
 
 Claude Code and the Cursor Agent CLI are proprietary. The image downloads them when you build it, on your machine, and
 go-remote does not redistribute them.

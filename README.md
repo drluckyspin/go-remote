@@ -421,6 +421,10 @@ the versions in the image you built.
 | herdr-web-ui     | not included    | 0.4.11             | 0.4.11             | 0.4.11             |
 | Bun              | not included    | 1.4.2              | 1.4.2              | 1.4.2              |
 | uv               | 0.13.1          | 0.13.1             | 0.13.1             | 0.13.1             |
+| dprint           | not included    | not included       | not included       | not included       |
+| shfmt            | not included    | not included       | not included       | not included       |
+| ShellCheck       | not included    | not included       | not included       | not included       |
+| mbake            | not included    | not included       | not included       | not included       |
 | Node.js          | 24              | 24                 | 24                 | 24                 |
 
 ## Project layout

@@ -3,6 +3,8 @@
 # The repo keeps its host path, which is long on a phone: the prompt shows its last two directories.
 PROMPT_DIRTRIM=2
 
+. /usr/local/share/go-remote/aliases
+
 # Herdr panes of a web-mode workspace: say how to sign in while no agent is.
 if [ -n "${HERDR_ENV:-}" ]; then
   go-remote-agent hint 2>/dev/null || true
