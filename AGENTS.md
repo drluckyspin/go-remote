@@ -134,7 +134,10 @@ for `go-remote --version`. Never edit either by hand. If another file starts car
 
 1. In the `Dockerfile`, change the component's `*_VERSION` build argument. Herdr and the Cursor Agent CLI also pin a
    SHA-256 digest for each architecture (`*_SHA256_AMD64`, `*_SHA256_ARM64`). herdr-web-ui pins a commit
-   (`HERDR_WEB_UI_COMMIT`) as well as its version. BitBang is checked against its release's `checksums.txt`.
+   (`HERDR_WEB_UI_COMMIT`) as well as its version. BitBang is checked against its release's `checksums.txt`, and dprint
+   against its `SHASUMS256.txt`. shfmt and ShellCheck pin a digest per architecture too. mbake is pinned, with every
+   package it needs, in `docker/mbake-requirements.txt`; change `MBAKE_VERSION` and regenerate the file with the
+   `uv pip compile` command in its header.
 2. The `go-remote.version.*` label picks the new version up. A new component also needs a label, and an entry in the pin
    loop in `scripts/smoke-test.bash`.
 3. An agent CLI's label is also in `PIN_LABELS` in `cli/src/versions.ts`, which compares it with the laptop's version

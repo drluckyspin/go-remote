@@ -48,6 +48,14 @@ ARG HERDR_SHA256_ARM64=17d7536f2da50859523680ef279dffcac8e4a235f4e46fe8da6c2ec44
 ARG CURSOR_AGENT_VERSION=2026.10.16-e3cb207
 ARG CURSOR_AGENT_SHA256_AMD64=3aa3f48cd7a3909a98c9b3f2a4085f0c021088bf826690b22c61f424c843e552
 ARG CURSOR_AGENT_SHA256_ARM64=4cf077f150eb8d1e270bf1dea69700184c39a4847fe192d523f5bb34d4b62597
+ARG DPRINT_VERSION=0.63.0
+ARG SHFMT_VERSION=3.14.1
+ARG SHFMT_SHA256_AMD64=76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf
+ARG SHFMT_SHA256_ARM64=5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489
+ARG SHELLCHECK_VERSION=0.11.0
+ARG SHELLCHECK_SHA256_AMD64=b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6
+ARG SHELLCHECK_SHA256_ARM64=68a8133197a50beb8803f8d42f9908d1af1c5540d4bb05fdfca8c1fa47decefc
+ARG MBAKE_VERSION=1.4.6
 ARG BUN_VERSION
 ARG HERDR_WEB_UI_VERSION
 ARG TARGETARCH
@@ -127,6 +135,52 @@ RUN set -eux; \
   ln -s cursor-agent /usr/local/bin/agent; \
   rm -f /tmp/cursor-agent.tar.gz
 
+# The formatters and linters `make lint` runs, so an agent can check its work before it commits. dprint fetches the
+# plugins a repo's dprint.json pins on first use, into the home volume.
+RUN set -eux; \
+  case "${TARGETARCH}" in \
+  amd64) asset=dprint-x86_64-unknown-linux-gnu.zip ;; \
+  arm64) asset=dprint-aarch64-unknown-linux-gnu.zip ;; \
+  *) echo "dprint has no Linux build for ${TARGETARCH}" >&2; exit 1 ;; \
+  esac; \
+  base="https://github.com/dprint/dprint/releases/download/${DPRINT_VERSION}"; \
+  cd /tmp; \
+  curl -fsSLO "${base}/${asset}"; \
+  curl -fsSLO "${base}/SHASUMS256.txt"; \
+  grep " ${asset}\$" SHASUMS256.txt | sha256sum -c -; \
+  unzip -q "${asset}" dprint; \
+  install -m 0755 dprint /usr/local/bin/dprint; \
+  rm -f "${asset}" SHASUMS256.txt dprint
+
+# shfmt and ShellCheck publish no checksum file, so the digests GitHub reports for the release assets are pinned here.
+RUN set -eux; \
+  case "${TARGETARCH}" in \
+  amd64) arch=x86_64; shfmt_sha256="${SHFMT_SHA256_AMD64}"; shellcheck_sha256="${SHELLCHECK_SHA256_AMD64}" ;; \
+  arm64) arch=aarch64; shfmt_sha256="${SHFMT_SHA256_ARM64}"; shellcheck_sha256="${SHELLCHECK_SHA256_ARM64}" ;; \
+  *) echo "shfmt and ShellCheck have no Linux build for ${TARGETARCH}" >&2; exit 1 ;; \
+  esac; \
+  curl -fsSL -o /tmp/shfmt \
+    "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_${TARGETARCH}"; \
+  echo "${shfmt_sha256}  /tmp/shfmt" | sha256sum -c -; \
+  install -m 0755 /tmp/shfmt /usr/local/bin/shfmt; \
+  curl -fsSL -o /tmp/shellcheck.tar.gz \
+    "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.${arch}.tar.gz"; \
+  echo "${shellcheck_sha256}  /tmp/shellcheck.tar.gz" | sha256sum -c -; \
+  tar -xzf /tmp/shellcheck.tar.gz -C /tmp; \
+  install -m 0755 "/tmp/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck; \
+  rm -rf /tmp/shfmt /tmp/shellcheck.tar.gz "/tmp/shellcheck-v${SHELLCHECK_VERSION}"
+
+# mbake and every package it needs come from PyPI pinned with hashes, into their own environment. mbake looks for a
+# newer release only for `--version` and `mbake update`, and cannot update itself on the read-only filesystem.
+COPY docker/mbake-requirements.txt /tmp/mbake-requirements.txt
+RUN set -eux; \
+  grep -q "^mbake==${MBAKE_VERSION} " /tmp/mbake-requirements.txt; \
+  UV_PYTHON_DOWNLOADS=never uv venv --quiet --python /usr/bin/python3 /opt/mbake; \
+  UV_CACHE_DIR=/tmp/uv-cache uv pip install --quiet --python /opt/mbake/bin/python --require-hashes \
+    -r /tmp/mbake-requirements.txt; \
+  ln -s /opt/mbake/bin/mbake /usr/local/bin/mbake; \
+  rm -rf /tmp/uv-cache /tmp/mbake-requirements.txt
+
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=web-ui /opt/herdr-web-ui /opt/herdr-web-ui
 
@@ -160,8 +214,12 @@ LABEL go-remote.version.bitbang="${BITBANG_VERSION}" \
       go-remote.version.claude-code="${CLAUDE_CODE_VERSION}" \
       go-remote.version.codex="${CODEX_VERSION}" \
       go-remote.version.cursor-agent="${CURSOR_AGENT_VERSION}" \
+      go-remote.version.dprint="${DPRINT_VERSION}" \
       go-remote.version.herdr="${HERDR_VERSION}" \
-      go-remote.version.herdr-web-ui="${HERDR_WEB_UI_VERSION}"
+      go-remote.version.herdr-web-ui="${HERDR_WEB_UI_VERSION}" \
+      go-remote.version.mbake="${MBAKE_VERSION}" \
+      go-remote.version.shellcheck="${SHELLCHECK_VERSION}" \
+      go-remote.version.shfmt="${SHFMT_VERSION}"
 
 USER agent
 WORKDIR /home/agent

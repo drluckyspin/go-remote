@@ -137,11 +137,12 @@ toolchain_checks() {
   log_info "Toolchain"
   for tool in "bitbang version" "claude --version" "codex --version" "cursor-agent --version" "herdr --version" "bun --version" \
     "gh --version" "git --version" "node --version" "npm --version" "python3 --version" "uv --version" \
-    "tmux -V" "rg --version" "jq --version" "make --version"; do
+    "tmux -V" "rg --version" "jq --version" "make --version" "dprint --version" "shfmt --version" \
+    "shellcheck --version" "mbake --version"; do
     check "$tool" "$tool"
   done
 
-  for label in bitbang bun claude-code codex cursor-agent herdr herdr-web-ui; do
+  for label in bitbang bun claude-code codex cursor-agent dprint herdr herdr-web-ui mbake shellcheck shfmt; do
     version="$(docker image inspect "$IMAGE" --format "{{index .Config.Labels \"go-remote.version.${label}\"}}")"
     case "$label" in
       bitbang) command="bitbang version" ;;
@@ -149,8 +150,12 @@ toolchain_checks() {
       claude-code) command="claude --version" ;;
       codex) command="codex --version" ;;
       cursor-agent) command="cursor-agent --version" ;;
+      dprint) command="dprint --version" ;;
       herdr) command="herdr --version" ;;
       herdr-web-ui) command="jq -r .version /opt/herdr-web-ui/package.json" ;;
+      mbake) command="mbake --version" ;;
+      shellcheck) command="shellcheck --version" ;;
+      shfmt) command="shfmt --version" ;;
     esac
     if [ -n "$version" ] && in_container "$command" 2>&1 | grep -qF -- "$version"; then
       pass "${label} is ${version}, as pinned"

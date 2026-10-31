@@ -41,8 +41,8 @@ flowchart LR
 There are three parts:
 
 - **The image and its compose service.** `Dockerfile` builds a Debian image with the pinned agent CLIs, BitBang, Herdr,
-  herdr-web-ui and Bun. `docker-compose.yml` runs it as one hardened `workspace` service, and every repo gets its own
-  compose project. `docker/entrypoint.bash` starts everything inside.
+  herdr-web-ui, Bun, and the formatters and linters `make lint` runs. `docker-compose.yml` runs it as one hardened
+  `workspace` service, and every repo gets its own compose project. `docker/entrypoint.bash` starts everything inside.
 - **The host CLI.** `go-remote` (`cli/`) starts and finds workspaces, signs agents in, moves agent sessions between the
   laptop and a workspace, and shows the QR code. The make targets are thin wrappers around it.
 - **The skill.** `/go-remote` (`skills/go-remote/SKILL.md`) tells an agent how to move its own session: find its session
@@ -347,6 +347,9 @@ Every component in the image is pinned in the `Dockerfile`, and each pin is chec
 | BitBang            | `BITBANG_VERSION`                           | The release's `checksums.txt`                   |
 | Herdr              | `HERDR_VERSION`                             | A SHA-256 per architecture, in the `Dockerfile` |
 | Cursor Agent CLI   | `CURSOR_AGENT_VERSION`                      | A SHA-256 per architecture, in the `Dockerfile` |
+| dprint             | `DPRINT_VERSION`                            | The release's `SHASUMS256.txt`                  |
+| shfmt, ShellCheck  | `SHFMT_VERSION`, `SHELLCHECK_VERSION`       | A SHA-256 per architecture, in the `Dockerfile` |
+| mbake              | `MBAKE_VERSION`                             | `docker/mbake-requirements.txt`, with hashes    |
 | herdr-web-ui       | `HERDR_WEB_UI_VERSION`, a tag               | `HERDR_WEB_UI_COMMIT`, and its frozen lockfile  |
 | Claude Code, Codex | `CLAUDE_CODE_VERSION`, `CODEX_VERSION`      | npm, by exact version                           |
 | Bun, uv            | The tags of the images they are copied from | Nothing beyond the tag                          |
