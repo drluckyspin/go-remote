@@ -141,6 +141,7 @@ toolchain_checks() {
     "shellcheck --version" "mbake --version"; do
     check "$tool" "$tool"
   done
+  check "Interactive shells have the aliases" 'bash -ic "alias ll && alias gs"'
 
   for label in bitbang bun claude-code codex cursor-agent dprint herdr herdr-web-ui mbake shellcheck shfmt; do
     version="$(docker image inspect "$IMAGE" --format "{{index .Config.Labels \"go-remote.version.${label}\"}}")"

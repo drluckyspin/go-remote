@@ -1,0 +1,20 @@
+# go-remote: shell aliases, sourced by the image's bashrc. ~/.bashrc runs after it, so an alias defined there wins.
+
+alias ls='ls --color=auto'
+alias l='ls -CF'
+alias la='ls -A'
+alias ll='ls -alFh'
+alias lt='ls -alFht'
+
+alias grep='grep --color=auto'
+alias ..='cd ..'
+alias ...='cd ../..'
+
+# Typing is slow on a phone keyboard.
+alias g='git'
+alias gs='git status -sb'
+alias gd='git diff'
+alias gl='git log --oneline --graph --decorate -20'
+alias gcb='git checkout -b'
+# Oh My Zsh's meaning: the main branch, or master in a repo that has no main.
+alias gcm='git checkout "$(git show-ref -q --verify refs/heads/main && echo main || echo master)"'

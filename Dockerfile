@@ -206,6 +206,7 @@ COPY docker/attach.bash /usr/local/bin/go-remote-attach
 COPY docker/pair.bash /usr/local/bin/go-remote-pair
 COPY docker/agent.bash /usr/local/bin/go-remote-agent
 COPY docker/bashrc /usr/local/share/go-remote/bashrc
+COPY docker/aliases /usr/local/share/go-remote/aliases
 RUN printf '\n. /usr/local/share/go-remote/bashrc\n' >>/etc/bash.bashrc
 
 # Read by go-remote doctor and the session handoff, which warn when the laptop's agent CLIs differ.
