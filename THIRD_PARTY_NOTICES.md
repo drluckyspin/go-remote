@@ -6,7 +6,7 @@ against them.
 
 | Component                                                              | License                    | How go-remote uses it                                                             | License text                              |
 | ---------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------- |
-| [BitBang CLI](https://github.com/richlegrand/bitbang-cli)              | MIT                        | Release binary in the image, checksum-verified                                    | `third_party/bitbang-cli/LICENSE`         |
+| [BitBang CLI](https://github.com/richlegrand/bitbang-cli)              | MIT                        | Built in the image from a pinned commit of our fork, which adds `serve -relay`    | `third_party/bitbang-cli/LICENSE`         |
 | [Herdr](https://github.com/herdrdev/herdr)                             | Apache-2.0                 | Release binary in the image, checksum-verified                                    | `third_party/herdr/LICENSE`               |
 | [herdr-web-ui](https://github.com/devswha/herdr-web-ui)                | MIT                        | Source at a pinned commit, run by Bun in the image                                | `third_party/herdr-web-ui/LICENSE`        |
 | [Bun](https://bun.sh)                                                  | MIT; JavaScriptCore LGPL-2 | Runtime in the image, and embedded in each `go-remote` executable                 | [Bun's licensing page][bun-licensing]     |

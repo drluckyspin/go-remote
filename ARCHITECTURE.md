@@ -344,7 +344,7 @@ Every component in the image is pinned in the `Dockerfile`, and each pin is chec
 
 | Component          | Pinned by                                   | Checked against                                 |
 | ------------------ | ------------------------------------------- | ----------------------------------------------- |
-| BitBang            | `BITBANG_VERSION`                           | The release's `checksums.txt`                   |
+| BitBang            | `BITBANG_VERSION`, a tag of our fork        | `BITBANG_COMMIT`, and its `go.sum`              |
 | Herdr              | `HERDR_VERSION`                             | A SHA-256 per architecture, in the `Dockerfile` |
 | Cursor Agent CLI   | `CURSOR_AGENT_VERSION`                      | A SHA-256 per architecture, in the `Dockerfile` |
 | dprint             | `DPRINT_VERSION`                            | The release's `SHASUMS256.txt`                  |
@@ -353,6 +353,7 @@ Every component in the image is pinned in the `Dockerfile`, and each pin is chec
 | herdr-web-ui       | `HERDR_WEB_UI_VERSION`, a tag               | `HERDR_WEB_UI_COMMIT`, and its frozen lockfile  |
 | Claude Code, Codex | `CLAUDE_CODE_VERSION`, `CODEX_VERSION`      | npm, by exact version                           |
 | Bun, uv            | The tags of the images they are copied from | Nothing beyond the tag                          |
+| Go, for BitBang    | `GO_VERSION`, the tag of the build image    | Nothing beyond the tag                          |
 
 The image records every version but uv's as a `go-remote.version.*` label, and the smoke test checks that what is
 installed matches them. Nothing updates itself: Claude Code has `DISABLE_AUTOUPDATER`, Herdr's version checks are off in

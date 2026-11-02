@@ -3,6 +3,9 @@
 ARG BUN_VERSION=1.4.2
 ARG HERDR_WEB_UI_VERSION=0.4.11
 ARG HERDR_WEB_UI_COMMIT=6de77101b2fafda044054e8f7195f3573b624b72
+ARG BITBANG_VERSION=0.5.1+relay.1
+ARG BITBANG_COMMIT=77c7fb12c0fc3a98b136d280ecbba2cee0f085bd
+ARG GO_VERSION=1.25.14
 
 FROM ghcr.io/astral-sh/uv:0.13.1 AS uv
 
@@ -35,11 +38,30 @@ RUN set -eux; \
   bun install --frozen-lockfile --production; \
   rm -rf /root/.bun/install/cache
 
+# BitBang, built from a pinned tag of the drluckyspin/bitbang-cli fork whose commit is checked, with every module
+# checked against go.sum. The tag is release 0.5.1 plus `serve -relay`, which no BitBang release has yet; the README's
+# Relays section says why the listener needs it.
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-trixie AS bitbang
+
+ARG BITBANG_VERSION
+ARG BITBANG_COMMIT
+ARG TARGETARCH
+
+COPY certs/ /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+WORKDIR /src/bitbang-cli
+RUN set -eux; \
+  git clone --quiet --depth 1 --branch "${BITBANG_VERSION}" https://github.com/drluckyspin/bitbang-cli.git .; \
+  test "$(git rev-parse HEAD)" = "${BITBANG_COMMIT}"; \
+  CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" GOTOOLCHAIN=local \
+    go build -trimpath -ldflags "-s -w" -o /out/bitbang ./cmd/bitbang/
+
 FROM node:24-trixie-slim
 
 ARG USER_UID=1000
 ARG USER_GID=1000
-ARG BITBANG_VERSION=0.5.1
+ARG BITBANG_VERSION
 ARG CLAUDE_CODE_VERSION=2.1.302
 ARG CODEX_VERSION=0.163.0
 ARG HERDR_VERSION=0.9.5
@@ -92,19 +114,10 @@ RUN set -eux; \
   rm -rf /var/lib/apt/lists/*
 
 COPY --from=uv /uv /uvx /usr/local/bin/
+COPY --from=bitbang /out/bitbang /usr/local/bin/bitbang
 
 RUN npm install -g --omit=dev "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" "@openai/codex@${CODEX_VERSION}" \
   && npm cache clean --force
-
-RUN set -eux; \
-  base="https://github.com/richlegrand/bitbang-cli/releases/download/${BITBANG_VERSION}"; \
-  asset="bitbang-linux-${TARGETARCH}"; \
-  cd /tmp; \
-  curl -fsSLO "${base}/${asset}"; \
-  curl -fsSLO "${base}/checksums.txt"; \
-  grep " ${asset}\$" checksums.txt | sha256sum -c -; \
-  install -m 0755 "${asset}" /usr/local/bin/bitbang; \
-  rm -f "${asset}" checksums.txt
 
 # Herdr publishes no checksum file, so the digests GitHub reports for the release assets are pinned here.
 RUN set -eux; \
