@@ -388,6 +388,15 @@ suit a host the phone can reach on the same network. For long sessions, use your
 Twilio all work), and restart the workspace. That file is gitignored. A file that does not parse stops the listener at
 startup instead of quietly falling back.
 
+**Relay-only listener.** With a TURN server in `config/ice-servers.json` and `GR_RELAY=force`, the listener in the
+container uses only that relay too, and so does the watchdog's check. Behind Zscaler, UDP from the container to a relay
+port below 49152 is dropped after a packet or two, and a hosted relay such as Metered hands out ports from about 20000
+up. A listener that also offered its own address could settle on that path after one answered check, and the phone then
+sat at "Negotiating connection": in testing, five first attempts in six stalled that way, and none in fifteen once the
+listener used only its relay. No BitBang release can do this yet, so the image builds `bitbang` from a
+[fork of 0.5.1](https://github.com/drluckyspin/bitbang-cli/tree/release/0.5.1-relay) that adds `serve -relay`. The
+`bitba.ng` relay only hands out ports from 49152 up, and a workspace without its own TURN server works as before.
+
 **Zscaler and other TLS-inspecting proxies.** Zscaler inspects TLS to some hosts, including `api.anthropic.com` and
 `bitba.ng`. On macOS, `make build` and `make cli` export the `Zscaler Root CA` from the System keychain into `certs/`,
 and the builds trust it. Any other `*.crt` you put in `certs/` before building is trusted too. If BitBang still cannot
