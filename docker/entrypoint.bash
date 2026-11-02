@@ -36,6 +36,7 @@ HERDR_SOCKET="${HOME}/.config/herdr/sessions/${HERDR_SESSION:-default}/herdr.soc
 SHELL_TAB="Repo Shell"
 
 LISTENER_PID=""
+RELAY_ONLY=""
 SERVICE_PIDS=()
 
 ui_mode() {
@@ -260,6 +261,20 @@ start_alerts() {
 }
 
 # -----------------------------------------------------------------------------------------------------------
+# Function: relay_only
+# Description: Whether the listener uses only its own TURN relay: when config/ice-servers.json names a turn: or
+#              turns: server and GR_RELAY is not auto. Behind Zscaler, UDP from the container to a relay port below
+#              49152 is dropped after a packet or two. A listener that also offers its own address can settle on
+#              that path to the phone's relay, and the phone then stalls at "Negotiating connection".
+# -----------------------------------------------------------------------------------------------------------
+relay_only() {
+  [ "$(printf '%s' "${GR_RELAY:-force}" | tr '[:upper:]' '[:lower:]')" != auto ] || return 1
+  jq -e '[(if type == "array" then . else (.iceServers // .ice_servers) end)[]
+    | .urls | (if type == "string" then [.] else . end)[]
+    | select(test("^turns?:"; "i"))] | length > 0' "$ICE_SERVERS_FILE" >/dev/null 2>&1
+}
+
+# -----------------------------------------------------------------------------------------------------------
 # Function: build_listener_args
 # Description: Assemble the bitbang serve command line into the global LISTENER_ARGS array. The web UI
 #              is served through BitBang's HTTP proxy, which stamps the browser's address as
@@ -278,6 +293,11 @@ build_listener_args() {
   if [ -e "$ICE_SERVERS_FILE" ]; then
     LISTENER_ARGS+=(-ice-servers "$ICE_SERVERS_FILE")
     log_info "Using TURN/STUN servers from config/ice-servers.json"
+    if relay_only; then
+      RELAY_ONLY=1
+      LISTENER_ARGS+=(-relay)
+      log_info "The listener connects only through that TURN relay (GR_RELAY=force)"
+    fi
   fi
   if [ "$(ui_mode)" = shell ]; then
     LISTENER_ARGS+=(shell "$SESSION_COMMAND")
@@ -339,13 +359,14 @@ stop_listener() {
 #              tmux or the web UI rather than a free shell, but only after the WebRTC connection and the
 #              control-stream handshake: "Connected." (shell mode) or the proxy-only listener's
 #              capability refusal (web mode) proves the URL works. In web mode the app must also answer
-#              through the ingress.
+#              through the ingress. A relay-only listener is probed through the relay too: a probe from the
+#              container's own address would send UDP to the relay's ports, which Zscaler may drop.
 # -----------------------------------------------------------------------------------------------------------
 probe_listener() {
   local url output
   url="$(cat "${BITBANG_HOME}/url")"
   output="$(HOME="$BITBANG_HOME" timeout 60 bitbang connect "$url" -nosave -timeout 30s \
-    ${BITBANG_PIN:+-pin "$BITBANG_PIN"} -- true </dev/null 2>&1)" || true
+    ${RELAY_ONLY:+-relay} ${BITBANG_PIN:+-pin "$BITBANG_PIN"} -- true </dev/null 2>&1)" || true
   if [[ "$output" != *"Connected."* && "$output" != *"does not advertise the \`shell\` capability"* ]]; then
     log_warning "Watchdog probe failed: $(echo "$output" | tail -n 1)"
     return 1

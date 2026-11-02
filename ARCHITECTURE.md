@@ -62,8 +62,9 @@ encrypted traffic.
 | `web` (default) | `bitbang serve -proxy-client-ip ... proxy 127.0.0.1:7300`                 | herdr-web-ui through the ingress: a chat view per agent, terminals, files |
 | `shell`         | `bitbang serve -disable-shell-mirror -shell-max-sessions N ... shell ...` | BitBang's own terminal on one shared tmux session (`go-remote-session`)   |
 
-Both add `-pin` when `BITBANG_PIN` is set, and `-ice-servers` when `config/ice-servers.json` exists. In the web mode,
-the chain is:
+Both add `-pin` when `BITBANG_PIN` is set, and `-ice-servers` when `config/ice-servers.json` exists. When that file
+names a TURN server and `GR_RELAY` is not `auto`, `relay_only()` adds `-relay` as well, so the listener, like the phone,
+uses only the relay; the README's Relays section says why. In the web mode, the chain is:
 
 ```text
 bitbang serve (proxy)  ->  go-remote-ingress 127.0.0.1:7300  ->  herdr-web-ui 127.0.0.1:7317  ->  Herdr server socket
@@ -146,9 +147,9 @@ page's markup. herdr-web-ui is pinned to a commit, and `make e2e` catches a rele
 5. `start_listener` runs `bitbang serve` with `HOME` on the tmpfs, waits up to 60 seconds for it to register, and
    records its URL in `/tmp/bitbang/url`. If it never registers, the container exits.
 6. `supervise_listener`, the watchdog: every `GR_WATCHDOG_INTERVAL` seconds (300 by default), it connects to its own URL
-   with `bitbang connect`, and in the web mode also checks that the app answers through the ingress. After two failures
-   in a row it marks the health `stale` and restarts the listener, with the same identity, so the URL keeps working. A
-   listener that exits is restarted three seconds later.
+   with `bitbang connect` (with `-relay` when the listener has it), and in the web mode also checks that the app answers
+   through the ingress. After two failures in a row it marks the health `stale` and restarts the listener, with the same
+   identity, so the URL keeps working. A listener that exits is restarted three seconds later.
 
 Each service runs under `keep_running`, which restarts it when it exits and prefixes its output with its name in the
 container log. The health file (`/tmp/bitbang/health`) feeds both compose's healthcheck and the CLI's
@@ -344,7 +345,7 @@ Every component in the image is pinned in the `Dockerfile`, and each pin is chec
 
 | Component          | Pinned by                                   | Checked against                                 |
 | ------------------ | ------------------------------------------- | ----------------------------------------------- |
-| BitBang            | `BITBANG_VERSION`                           | The release's `checksums.txt`                   |
+| BitBang            | `BITBANG_VERSION`, a tag of our fork        | `BITBANG_COMMIT`, and its `go.sum`              |
 | Herdr              | `HERDR_VERSION`                             | A SHA-256 per architecture, in the `Dockerfile` |
 | Cursor Agent CLI   | `CURSOR_AGENT_VERSION`                      | A SHA-256 per architecture, in the `Dockerfile` |
 | dprint             | `DPRINT_VERSION`                            | The release's `SHASUMS256.txt`                  |
@@ -353,6 +354,7 @@ Every component in the image is pinned in the `Dockerfile`, and each pin is chec
 | herdr-web-ui       | `HERDR_WEB_UI_VERSION`, a tag               | `HERDR_WEB_UI_COMMIT`, and its frozen lockfile  |
 | Claude Code, Codex | `CLAUDE_CODE_VERSION`, `CODEX_VERSION`      | npm, by exact version                           |
 | Bun, uv            | The tags of the images they are copied from | Nothing beyond the tag                          |
+| Go, for BitBang    | `GO_VERSION`, the tag of the build image    | Nothing beyond the tag                          |
 
 The image records every version but uv's as a `go-remote.version.*` label, and the smoke test checks that what is
 installed matches them. Nothing updates itself: Claude Code has `DISABLE_AUTOUPDATER`, Herdr's version checks are off in

@@ -85,7 +85,8 @@ start_workspace() {
   pass "Listener registered (${mode} mode)"
 }
 
-# Wait for the listener to register, which a (re)started container does on a new URL. Sets URL.
+# Wait for the listener to register, which a (re)started container does on a new URL. Sets URL, and RELAY_FLAG for
+# a relay-only listener, which the checks reach through the relay as its watchdog does.
 wait_for_listener() {
   local waited=0
   until [ "$(in_container 'cat /tmp/bitbang/health 2>/dev/null' 2>/dev/null)" = ok ]; do
@@ -98,6 +99,10 @@ wait_for_listener() {
     waited=$((waited + 1))
   done
   URL="$(in_container 'cat /tmp/bitbang/url')"
+  RELAY_FLAG=""
+  if in_container 'tr "\0" "\n" <"/proc/$(pgrep -o -x bitbang)/cmdline" | grep -qx -- -relay'; then
+    RELAY_FLAG=-relay
+  fi
 }
 
 # A restarted container keeps its Herdr session; a new one (go-remote start after go-remote stop) starts afresh.
@@ -232,8 +237,26 @@ web_checks() {
        -H "Content-Type: application/json" -d "{}" http://127.0.0.1:7300/api/devices/pair)" = 403 ]'
   check "Pairing codes are six digits" 'go-remote-pair | jq -e '\''.code | test("^[0-9]{6}$")'\'''
   check "End-to-end BitBang connection reaches the proxy-only listener" \
-    "HOME=/tmp timeout 60 bitbang connect '$URL' -nosave -timeout 30s -- true </dev/null 2>&1 |
+    "HOME=/tmp timeout 60 bitbang connect '$URL' -nosave -timeout 30s ${RELAY_FLAG} -- true </dev/null 2>&1 |
      grep -qF 'does not advertise the \`shell\` capability'"
+}
+
+relay_checks() {
+  log_info "Relay"
+  check "bitbang serve -relay refuses a relay file without a TURN server" \
+    'printf "[{\"urls\": \"stun:stun.example.net:3478\"}]" >/tmp/smoke-stun.json &&
+     HOME=/tmp timeout 10 bitbang serve -relay -ice-servers /tmp/smoke-stun.json -ephemeral -nocode -noqr shell true \
+       </dev/null 2>&1 | grep -qF "needs a turn: or turns: server"'
+  check "The listener uses only its relay when config/ice-servers.json names a TURN server and GR_RELAY=force" \
+    'expected=no
+     if [ "${GR_RELAY,,}" != auto ] && jq -e "[(if type == \"array\" then . else (.iceServers // .ice_servers) end)[]
+          | .urls | (if type == \"string\" then [.] else . end)[] | select(test(\"^turns?:\"; \"i\"))] | length > 0" \
+          /etc/go-remote/ice-servers.json >/dev/null 2>&1; then
+       expected=yes
+     fi
+     actual=no
+     if tr "\0" "\n" <"/proc/$(pgrep -o -x bitbang)/cmdline" | grep -qx -- -relay; then actual=yes; fi
+     [ "$expected" = "$actual" ]'
 }
 
 watchdog_checks() {
@@ -287,7 +310,7 @@ shell_checks() {
 
   check "TLS to api.anthropic.com verifies" 'curl -sS -o /dev/null --max-time 15 https://api.anthropic.com/'
   check "End-to-end BitBang connection to the shell" \
-    "HOME=/tmp timeout 60 bitbang connect '$URL' -nosave -timeout 30s -- true </dev/null 2>&1 | grep -q '^Connected.'"
+    "HOME=/tmp timeout 60 bitbang connect '$URL' -nosave -timeout 30s ${RELAY_FLAG} -- true </dev/null 2>&1 | grep -q '^Connected.'"
 }
 
 main() {
@@ -310,6 +333,7 @@ main() {
   toolchain_checks
   git_checks
   web_checks
+  relay_checks
   watchdog_checks
   session_checks
 
